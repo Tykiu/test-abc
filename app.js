@@ -1119,7 +1119,6 @@ async function openChatWith(idEncoded, nameEncoded, mssvEncoded = "", avatarUrlE
           ${mssv ? `<div style="font-size:0.78rem;color:var(--text-muted)">${escapeHtml(mssv)}</div>` : ""}
         </div>
       </div>
-      <button class="modal-close" onclick="closeChat()" title="Đóng">✕</button>
     </div>
     <div class="chat-messages" id="chatMsgs"></div>
     <div class="chat-input-row">
