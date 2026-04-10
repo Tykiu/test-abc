@@ -1,6 +1,6 @@
 class ApiClient {
   constructor() {
-    const defaultApi = "https://uit-study-buddy-6bx2.onrender.com";
+    const defaultApi = "https://uit-test.onrender.com";
     const savedApi = localStorage.getItem("sb_api_base");
     const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     this.baseUrl = savedApi || (isLocal ? "http://localhost:8000" : defaultApi);
