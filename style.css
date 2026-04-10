@@ -1029,13 +1029,13 @@ button:disabled {
   .chat-sidebar {
     width: 100%;
     height: auto;
-    max-height: 40vh;
+    max-height: 30vh;
   }
   .chat-page.open {
     flex-direction: column;
   }
   .chat-main {
-    height: 60vh;
+    height: 70vh;
   }
 }
 
@@ -1062,9 +1062,14 @@ button:disabled {
 
 @media (max-width: 860px) {
   .navbar {
+    display: flex;
     flex-wrap: wrap;
+    justify-content: space-between;
     padding: 16px 18px;
   }
+  .nav-logo { order: 1; }
+  .nav-right { order: 2; }
+  .nav-modes { order: 3; width: 100%; margin-top: 16px; justify-content: center; }
 
   .main-wrap {
     width: min(100% - 20px, 1200px);
@@ -1077,15 +1082,21 @@ button:disabled {
 }
 
 @media (max-width: 600px) {
-  .search-bar-wrap,
-  .nav-right,
-  .nav-modes {
+  .search-bar-wrap {
     width: 100%;
   }
+  
+  .nav-logo { font-size: 1.25rem; }
+  .nav-logo svg { width: 32px; height: 32px; }
+  .nav-login-btn { padding: 8px 14px; font-size: 0.85rem; }
+  .nav-register-btn { padding: 8px 14px; font-size: 0.85rem; }
 
-  .nav-modes,
-  .nav-auth-btns {
-    justify-content: space-between;
+  .modal-overlay {
+    padding: 12px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
   }
 
   .mode-btn,
@@ -1094,10 +1105,9 @@ button:disabled {
   .btn-create {
     flex: 1;
   }
-
-  .user-avatar-btn {
-    width: 100%;
-    justify-content: space-between;
+  
+  .account-wrap {
+    padding: 20px 14px 40px;
   }
 }
 
