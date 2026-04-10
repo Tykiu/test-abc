@@ -159,19 +159,19 @@ function setButtonLoading(id, loading, loadingText = "Đang xử lý...") {
   if (!button) return;
 
   if (!button.dataset.originalText) {
-    button.dataset.originalText = button.textContent;
+    button.dataset.originalText = button.innerHTML;
   }
 
   if (loading) {
     button.disabled = true;
     button.classList.add("btn-loading");
     button.setAttribute("aria-busy", "true");
-    if (loadingText) button.textContent = loadingText;
+    if (loadingText) button.innerHTML = loadingText;
   } else {
     button.disabled = false;
     button.classList.remove("btn-loading");
     button.removeAttribute("aria-busy");
-    button.textContent = button.dataset.originalText || button.textContent;
+    button.innerHTML = button.dataset.originalText || button.innerHTML;
   }
 }
 
@@ -973,6 +973,7 @@ function upsertChat(chat) {
     lastTime: chat.lastTime || "",
     messages: Array.isArray(chat.messages) ? chat.messages : [],
     loaded: !!chat.loaded,
+    draft: chat.draft || "",
   };
 
   const index = chatCache.findIndex((item) => item.id === normalized.id);
@@ -1039,6 +1040,14 @@ function closeChat() {
 }
 
 async function openChatWith(idEncoded, nameEncoded, mssvEncoded = "", avatarUrlEncoded = "") {
+  // Lưu lại tin nhắn đang gõ dở trước khi chuyển sang chat khác
+  if (currentChatUser) {
+    const currentInput = qs("chatInput");
+    if (currentInput) {
+      currentChatUser.draft = currentInput.value;
+    }
+  }
+
   const id = decodeInline(idEncoded);
   const name = decodeInline(nameEncoded);
   const mssv = decodeInline(mssvEncoded);
@@ -1074,7 +1083,7 @@ async function openChatWith(idEncoded, nameEncoded, mssvEncoded = "", avatarUrlE
     </div>
     <div class="chat-messages" id="chatMsgs"></div>
     <div class="chat-input-row">
-      <input id="chatInput" placeholder="Nhập tin nhắn..." />
+      <input id="chatInput" placeholder="Nhập tin nhắn..." value="${escapeHtml(chat.draft || '')}" />
       <button class="btn-full" id="chatSendBtn" style="width:auto;padding:10px 20px;border-radius:999px" onclick="sendMsg()">
         <i class="fa-solid fa-paper-plane" style="font-size:0.85rem"></i>
       </button>
@@ -1139,6 +1148,7 @@ async function sendMsg() {
       createdAt: new Date().toISOString(),
     });
     currentChatUser.last = text;
+    currentChatUser.draft = "";
     currentChatUser.lastTime = new Date().toISOString();
     input.value = "";
     renderChatMessages();
@@ -1159,6 +1169,7 @@ async function sendMsg() {
   };
 
   input.value = "";
+  currentChatUser.draft = "";
   currentChatUser.messages.push(optimisticMessage);
   currentChatUser.last = text;
   currentChatUser.lastTime = optimisticMessage.createdAt;
@@ -1166,7 +1177,7 @@ async function sendMsg() {
   renderChatList();
 
   try {
-    setButtonLoading("chatSendBtn", true, "Đang gửi...");
+    setButtonLoading("chatSendBtn", true, ""); // Để rỗng để không bị ghi đè text, chỉ hiện vòng xoay load
     input.disabled = true;
     await apiFetch("/api/messages", {
       method: "POST",
