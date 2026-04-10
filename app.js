@@ -1,7 +1,89 @@
-const DEFAULT_API = "https://uit-test.onrender.com";
-const SAVED_API = localStorage.getItem("sb_api_base");
-const IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-const API_BASE = SAVED_API ? SAVED_API : (IS_LOCAL ? "http://localhost:8000" : DEFAULT_API);
+class ApiClient {
+  constructor() {
+    const defaultApi = "https://uit-study-buddy-6bx2.onrender.com";
+    const savedApi = localStorage.getItem("sb_api_base");
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    this.baseUrl = savedApi || (isLocal ? "http://localhost:8000" : defaultApi);
+    this.isAvailable = false;
+  }
+
+  async fetch(path, options = {}) {
+    const headers = new Headers(options.headers || {});
+    if (!headers.has("Content-Type") && options.body) headers.set("Content-Type", "application/json");
+    
+    const token = sessionManager.getToken();
+    if (!headers.has("Authorization") && token) headers.set("Authorization", `Bearer ${token}`);
+
+    const response = await fetch(`${this.baseUrl}${path}`, { ...options, headers });
+    const text = await response.text();
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = { detail: text }; }
+    
+    if (!response.ok) throw new Error(data.detail || data.message || "Yêu cầu thất bại");
+    return data;
+  }
+
+  async checkHealth() {
+    try { await this.fetch("/api/health"); this.isAvailable = true; }
+    catch { this.isAvailable = false; }
+    apiAvailable = this.isAvailable;
+  }
+}
+
+class SessionManager {
+  getToken() { return localStorage.getItem("sb_access_token") || ""; }
+  setToken(token) { token ? localStorage.setItem("sb_access_token", token) : localStorage.removeItem("sb_access_token"); }
+  
+  persist(user, profile) {
+    if (user && profile) localStorage.setItem("sb_session", JSON.stringify({ user, profile }));
+    else localStorage.removeItem("sb_session");
+  }
+  
+  restore() {
+    const raw = localStorage.getItem("sb_session");
+    if (!raw) return { user: null, profile: null };
+    try { 
+      const saved = JSON.parse(raw); 
+      return { user: saved.user || null, profile: saved.profile || null }; 
+    } catch { 
+      localStorage.removeItem("sb_session"); 
+      return { user: null, profile: null };
+    }
+  }
+}
+
+class ChatManager {
+  constructor() {
+    this.pollInterval = null;
+    document.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && e.target && e.target.id === "chatInput") {
+        e.preventDefault();
+        sendMsg();
+      }
+    });
+  }
+  startPolling() {
+    if (this.pollInterval) clearInterval(this.pollInterval);
+    this.pollInterval = setInterval(async () => {
+      if (apiAvailable && sessionManager.getToken() && !DEMO_PREVIEW_MODE && qs("chatPage")?.classList.contains("open")) {
+        const activeChatId = currentChatUser?.id;
+        const oldMsgCount = currentChatUser?.messages?.length || 0;
+        await loadConversations();
+        if (activeChatId && currentChatUser && currentChatUser.id === activeChatId) {
+          await loadMessagesForChat(currentChatUser);
+          if (currentChatUser.messages.length > oldMsgCount) renderChatMessages();
+        }
+      }
+    }, 5000);
+  }
+  stopPolling() {
+    if (this.pollInterval) { clearInterval(this.pollInterval); this.pollInterval = null; }
+  }
+}
+
+const api = new ApiClient();
+const sessionManager = new SessionManager();
+const chatManager = new ChatManager();
 
 let apiAvailable = false;
 let currentUser = null;
@@ -19,17 +101,8 @@ function qs(id) {
   return document.getElementById(id);
 }
 
-function getToken() {
-  return localStorage.getItem("sb_access_token") || "";
-}
-
-function setToken(token) {
-  if (token) {
-    localStorage.setItem("sb_access_token", token);
-  } else {
-    localStorage.removeItem("sb_access_token");
-  }
-}
+function getToken() { return sessionManager.getToken(); }
+function setToken(token) { sessionManager.setToken(token); }
 
 function getDemoData() {
   return window.DEMO_DATA || null;
@@ -165,6 +238,7 @@ function closeAllModals() {
 function closeAllPages() {
   qs("chatPage")?.classList.remove("open");
   qs("accountPage")?.classList.remove("open");
+  if (typeof chatManager !== "undefined") chatManager.stopPolling();
 }
 
 function showHome() {
@@ -237,40 +311,9 @@ function uploadAvatar(file) {
   });
 }
 
-async function apiFetch(path, options = {}) {
-  const headers = new Headers(options.headers || {});
-  if (!headers.has("Content-Type") && options.body) {
-    headers.set("Content-Type", "application/json");
-  }
-  if (!headers.has("Authorization") && getToken()) {
-    headers.set("Authorization", `Bearer ${getToken()}`);
-  }
+function apiFetch(path, options = {}) { return api.fetch(path, options); }
 
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const text = await response.text();
-
-  let data = {};
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    data = { detail: text };
-  }
-
-  if (!response.ok) {
-    throw new Error(data.detail || data.message || "Yêu cầu thất bại");
-  }
-
-  return data;
-}
-
-async function checkApiHealth() {
-  try {
-    await apiFetch("/api/health");
-    apiAvailable = true;
-  } catch {
-    apiAvailable = false;
-  }
-}
+function checkApiHealth() { return api.checkHealth(); }
 
 function renderAvatar(user) {
   const el = document.getElementById('navAvatar');
@@ -283,27 +326,13 @@ function renderAvatar(user) {
 }
 
 function persistSession() {
-  if (currentUser && currentProfile) {
-    localStorage.setItem(
-      "sb_session",
-      JSON.stringify({ user: currentUser, profile: currentProfile })
-    );
-  } else {
-    localStorage.removeItem("sb_session");
-  }
+  sessionManager.persist(currentUser, currentProfile);
 }
 
 function restoreSession() {
-  const raw = localStorage.getItem("sb_session");
-  if (!raw) return;
-
-  try {
-    const saved = JSON.parse(raw);
-    currentUser = saved.user || null;
-    currentProfile = saved.profile || null;
-  } catch {
-    localStorage.removeItem("sb_session");
-  }
+  const session = sessionManager.restore();
+  currentUser = session.user;
+  currentProfile = session.profile;
 }
 
 function updateNavbar() {
@@ -528,6 +557,7 @@ function logout() {
   closeAllPages();
   closeAllModals();
   renderChatList();
+  chatManager.stopPolling();
   showToast("Đã đăng xuất");
 }
 
@@ -1000,10 +1030,12 @@ async function openChat() {
 
   await loadConversations();
   qs("chatPage").classList.add("open");
+  chatManager.startPolling();
 }
 
 function closeChat() {
   qs("chatPage").classList.remove("open");
+  chatManager.stopPolling();
 }
 
 async function openChatWith(idEncoded, nameEncoded, mssvEncoded = "", avatarUrlEncoded = "") {
