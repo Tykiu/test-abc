@@ -175,6 +175,15 @@ function setButtonLoading(id, loading, loadingText = "Đang xử lý...") {
   }
 }
 
+function updateNavBadge() {
+  const totalUnread = chatCache.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0);
+  const badge = qs("msgBadge");
+  if (badge) {
+    badge.textContent = totalUnread > 99 ? "99+" : totalUnread;
+    badge.style.display = totalUnread > 0 ? "flex" : "none";
+  }
+}
+
 function readHashParams() {
   const hash = window.location.hash.startsWith("#")
     ? window.location.hash.slice(1)
@@ -911,7 +920,20 @@ function renderChatList() {
         .map(
           (chat) => {
             const initial = (chat.name || "U").trim().slice(0, 1).toUpperCase();
-            const lastMsg = chat.last ? escapeHtml(chat.last) : '<span style="font-style:italic;opacity:0.7">Chưa có tin nhắn</span>';
+            let lastMsgHtml = '';
+            if (chat.draft) {
+              lastMsgHtml = `<span style="color: var(--danger); font-weight: 600;">[Nháp] ${escapeHtml(chat.draft)}</span>`;
+            } else if (chat.last) {
+              const fw = chat.unreadCount > 0 ? 'font-weight: 600; color: var(--text);' : '';
+              lastMsgHtml = `<span style="${fw}">${escapeHtml(chat.last)}</span>`;
+            } else {
+              lastMsgHtml = `<span style="font-style:italic;opacity:0.7">Chưa có tin nhắn</span>`;
+            }
+
+            const unreadBadge = chat.unreadCount > 0 
+              ? `<div style="background: var(--danger); color: #fff; font-size: 0.65rem; font-weight: bold; border-radius: 10px; padding: 2px 6px; margin-left: 8px;">${chat.unreadCount}</div>` 
+              : '';
+
             const isActive = currentChatUser && currentChatUser.id === chat.id;
             const avatarContent = chat.avatarUrl
               ? `<img src="${escapeHtml(chat.avatarUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.textContent='${escapeHtml(initial)}'">`
@@ -920,8 +942,13 @@ function renderChatList() {
               <div class="chat-item-card${isActive ? ' active' : ''}" onclick="openChatWith('${encodeInline(chat.id)}','${encodeInline(chat.name)}','${encodeInline(chat.mssv || '')}','${encodeInline(chat.avatarUrl || '')}')">
                 <div class="chat-item-avatar-wrap">${avatarContent}</div>
                 <div class="chat-item-info">
-                  <div class="chat-item-name">${escapeHtml(chat.name || 'Người dùng')}</div>
-                  <div class="chat-item-last">${lastMsg}</div>
+                  <div class="chat-item-name" style="${chat.unreadCount > 0 ? 'font-weight: 800;' : ''} display: flex; justify-content: space-between; align-items: center;">
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(chat.name || 'Người dùng')}</span>
+                    ${unreadBadge}
+                  </div>
+                  <div class="chat-item-last" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${lastMsgHtml}</span>
+                  </div>
                 </div>
               </div>
             `;
@@ -947,17 +974,25 @@ async function loadConversations() {
 
   try {
     const res = await apiFetch("/api/messages?limit=50");
-    chatCache = (res.data || []).map((item) => ({
-      id: String(item.user_id),
-      name: item.full_name || "Người dùng",
-      mssv: item.mssv || "",
-      avatarUrl: item.avatar_url || "",
-      last: item.last_message || "",
-      lastTime: item.last_time || "",
-      messages: [],
-      loaded: false,
-    }));
+    const newData = (res.data || []).map((item) => {
+      const existing = chatCache.find((c) => c.id === String(item.user_id));
+      const isActive = currentChatUser && currentChatUser.id === String(item.user_id);
+      return {
+        id: String(item.user_id),
+        name: item.full_name || "Người dùng",
+        mssv: item.mssv || "",
+        avatarUrl: item.avatar_url || "",
+        last: item.last_message || "",
+        lastTime: item.last_time || "",
+        unreadCount: isActive ? 0 : (item.unread_count || 0),
+        messages: existing ? existing.messages : [],
+        loaded: existing ? existing.loaded : false,
+        draft: existing ? existing.draft : "",
+      };
+    });
+    chatCache = newData;
     renderChatList();
+    updateNavBadge();
   } catch (error) {
     showToast(error.message || "Không tải được danh sách hội thoại", "error");
   }
@@ -971,6 +1006,7 @@ function upsertChat(chat) {
     avatarUrl: chat.avatarUrl || "",
     last: chat.last || "",
     lastTime: chat.lastTime || "",
+    unreadCount: chat.unreadCount || 0,
     messages: Array.isArray(chat.messages) ? chat.messages : [],
     loaded: !!chat.loaded,
     draft: chat.draft || "",
@@ -983,6 +1019,8 @@ function upsertChat(chat) {
       ...normalized,
       avatarUrl: normalized.avatarUrl || chatCache[index].avatarUrl || "",
       messages: normalized.messages.length ? normalized.messages : chatCache[index].messages,
+      draft: normalized.draft || chatCache[index].draft || "",
+      unreadCount: normalized.unreadCount !== undefined ? normalized.unreadCount : chatCache[index].unreadCount,
     };
   } else {
     chatCache.unshift(normalized);
@@ -1062,7 +1100,9 @@ async function openChatWith(idEncoded, nameEncoded, mssvEncoded = "", avatarUrlE
     loaded: false,
   });
   currentChatUser = chat;
+  currentChatUser.unreadCount = 0;
   renderChatList();
+  updateNavBadge();
 
   const topAvatarHtml = (chat.avatarUrl)
     ? `<img src="${escapeHtml(chat.avatarUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.textContent='${escapeHtml(name.trim().slice(0,1).toUpperCase())}'"/>`
@@ -1083,7 +1123,7 @@ async function openChatWith(idEncoded, nameEncoded, mssvEncoded = "", avatarUrlE
     </div>
     <div class="chat-messages" id="chatMsgs"></div>
     <div class="chat-input-row">
-      <input id="chatInput" placeholder="Nhập tin nhắn..." value="${escapeHtml(chat.draft || '')}" />
+      <input id="chatInput" placeholder="Nhập tin nhắn..." value="${escapeHtml(chat.draft || '')}" oninput="if(currentChatUser) { currentChatUser.draft = this.value; renderChatList(); }" />
       <button class="btn-full" id="chatSendBtn" style="width:auto;padding:10px 20px;border-radius:999px" onclick="sendMsg()">
         <i class="fa-solid fa-paper-plane" style="font-size:0.85rem"></i>
       </button>

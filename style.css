@@ -156,6 +156,29 @@ button:disabled {
   color: var(--c1);
 }
 
+.nav-icon-btn {
+  position: relative;
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  line-height: 1;
+}
+
 .user-avatar-btn {
   gap: 12px;
   padding: 10px 16px 10px 12px;
@@ -1191,5 +1214,3 @@ button:disabled {
   z-index: 10;
   pointer-events: all;
 }
-
-
