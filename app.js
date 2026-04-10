@@ -1,4 +1,4 @@
-const DEFAULT_API = "https://uit-study-buddy-6bx2.onrender.com";
+const DEFAULT_API = "https://uit-test.onrender.com";
 const SAVED_API = localStorage.getItem("sb_api_base");
 const IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 const API_BASE = SAVED_API ? SAVED_API : (IS_LOCAL ? "http://localhost:8000" : DEFAULT_API);
