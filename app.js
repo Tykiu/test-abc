@@ -1257,57 +1257,70 @@ function renderAccountPage() {
     : escapeHtml(initials);
 
   qs("accountWrap").innerHTML = `
-    <div class="account-card">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
-        <button onclick="closeAllPages()" style="
-          background:var(--bg-card);
-          border:1.5px solid var(--border);
-          padding:6px 12px;
-          border-radius:8px;
-          color:var(--c1);
-          font-size:0.82rem;
-          font-weight:600;
-          cursor:pointer;
-          white-space:nowrap;
-          flex-shrink:0;
-          display:flex;align-items:center;gap:6px;
-        "><i class="fa-solid fa-arrow-left" style="font-size:0.75rem"></i> Trang chủ</button>
-        <h1 style="margin:0;font-family:var(--font-head);font-size:1.4rem;color:var(--c1);flex:1;text-align:center">Tài khoản của tôi</h1>
-        <div style="width:80px;flex-shrink:0"></div>
+    <div class="account-card" style="background: transparent; border: none; box-shadow: none; padding: 0;">
+      
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px">
+        <button onclick="closeAllPages()" class="nav-icon-btn" style="width:42px;height:42px;display:flex;justify-content:center;align-items:center;border-radius:50%;flex-shrink:0;">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <h1 style="margin:0;font-family:var(--font-head);font-size:1.6rem;color:var(--c1);flex:1;text-align:center">Hồ sơ cá nhân</h1>
+        <div style="width:42px;flex-shrink:0"></div>
       </div>
 
-      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px;gap:12px">
-        <div style="
-          width:88px;height:88px;border-radius:50%;
-          background:linear-gradient(135deg,var(--c2),var(--c4));
-          color:#fff;font-size:2rem;font-weight:700;
-          display:flex;align-items:center;justify-content:center;
-          overflow:hidden;border:3px solid var(--border);
-          box-shadow:0 4px 16px rgba(18,52,77,0.12)
-        ">${avatarHtml}</div>
+      <!-- Avatar Section -->
+      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:32px;gap:16px">
+        <div style="width:104px;height:104px;border-radius:50%;background:linear-gradient(135deg,var(--c2),var(--c4));color:#fff;font-size:2.5rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;border:4px solid #fff;box-shadow:0 8px 24px rgba(18,52,77,0.12)">
+          ${avatarHtml}
+        </div>
         <div style="text-align:center">
-          <div style="font-weight:700;font-size:1.1rem;color:var(--c1)">${escapeHtml(profile.full_name || "—")}</div>
-          <div style="font-size:0.82rem;color:var(--text-muted);margin-top:2px">${escapeHtml(currentUser?.email || "—")}</div>
+          <div style="font-weight:800;font-size:1.35rem;color:var(--c1);letter-spacing:-0.02em;">${escapeHtml(profile.full_name || "—")}</div>
+          <div style="font-size:0.9rem;color:var(--text-muted);margin-top:4px">${escapeHtml(currentUser?.email || "—")}</div>
         </div>
       </div>
 
       ${
         profile.is_verified
-          ? `<div class="verified-banner">✅ Tài khoản đã được xác thực</div>`
-          : `<div class="verify-banner" style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div><div class="verify-banner-title" style="font-weight:700;color:var(--warn)">Chưa xác thực</div><div class="verify-banner-text">Xác thực email trường để tăng uy tín.</div></div><button class="btn-primary" style="flex-shrink:0;padding:8px 14px;font-size:0.82rem" onclick="openVerifyModal()">Xác thực ngay</button></div>`
+          ? `<div class="verified-banner" style="border-radius:16px;display:flex;align-items:center;gap:12px;padding:16px 20px;margin-bottom:24px;"><i class="fa-solid fa-circle-check" style="font-size:1.3rem;"></i><span style="font-weight:700;font-size:0.95rem;">Tài khoản sinh viên đã xác thực</span></div>`
+          : `<div class="verify-banner" style="border-radius:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;margin-bottom:24px;"><div><div class="verify-banner-title" style="font-weight:800;color:var(--warn);margin-bottom:4px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-triangle-exclamation"></i> Chưa xác thực</div><div class="verify-banner-text" style="font-size:0.85rem;">Xác nhận email trường để mở khóa tính năng.</div></div><button class="btn-primary" style="flex-shrink:0;padding:10px 18px;font-size:0.85rem;border-radius:99px;" onclick="openVerifyModal()">Xác thực</button></div>`
       }
 
-      <div style="display:grid;gap:8px;margin-bottom:20px">
-        <div class="profile-info-row"><span class="profile-info-label">MSSV</span><span class="profile-info-value">${escapeHtml(profile.mssv || "—")}</span></div>
-        <div class="profile-info-row"><span class="profile-info-label">Bio</span><span class="profile-info-value">${escapeHtml(profile.bio || "Chưa có giới thiệu")}</span></div>
+      <!-- Info Group -->
+      <div class="settings-group">
+        <div style="padding:18px 20px;display:grid;gap:16px;">
+          <div>
+            <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Mã số sinh viên</div>
+            <div style="font-size:1.05rem;font-weight:700;color:var(--c1);">${escapeHtml(profile.mssv || "—")}</div>
+          </div>
+          <div style="height:1px;background:var(--border);"></div>
+          <div>
+            <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Giới thiệu bản thân</div>
+            <div style="font-size:0.95rem;color:var(--text);line-height:1.6;">${escapeHtml(profile.bio || "Chưa có lời giới thiệu nào.")}</div>
+          </div>
+        </div>
       </div>
 
-      <div style="display:grid;gap:10px">
-        <button class="btn-full secondary" onclick="openEditModal()"><i class="fa-solid fa-pen" style="margin-right:8px;font-size:0.85rem"></i>Chỉnh sửa thông tin</button>
-        ${!profile.is_verified ? `<button class="btn-full" onclick="openVerifyModal()"><i class="fa-solid fa-envelope" style="margin-right:8px;font-size:0.85rem"></i>Xác thực Email trường</button>` : ""}
-        <button class="btn-full secondary" onclick="openModal('termsModal')"><i class="fa-solid fa-file-lines" style="margin-right:8px;font-size:0.85rem"></i>Điều khoản sử dụng</button>
-        <button class="btn-full" style="background:linear-gradient(135deg,var(--danger),#e05c5c)" onclick="logout()"><i class="fa-solid fa-right-from-bracket" style="margin-right:8px;font-size:0.85rem"></i>Đăng xuất</button>
+      <!-- Actions Group -->
+      <div class="settings-group">
+        <button class="settings-item" onclick="openEditModal()">
+          <div class="settings-item-icon"><i class="fa-solid fa-user-pen"></i></div>
+          <div class="settings-item-text">Chỉnh sửa thông tin</div>
+          <i class="fa-solid fa-chevron-right settings-item-arrow"></i>
+        </button>
+        <button class="settings-item" onclick="openModal('termsModal')">
+          <div class="settings-item-icon"><i class="fa-solid fa-file-shield"></i></div>
+          <div class="settings-item-text">Điều khoản sử dụng</div>
+          <i class="fa-solid fa-chevron-right settings-item-arrow"></i>
+        </button>
       </div>
+
+      <div class="settings-group">
+        <button class="settings-item danger" onclick="logout()">
+          <div class="settings-item-icon"><i class="fa-solid fa-right-from-bracket"></i></div>
+          <div class="settings-item-text">Đăng xuất khỏi thiết bị</div>
+        </button>
+      </div>
+
     </div>
   `;
 }
