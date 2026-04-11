@@ -139,3 +139,45 @@ class StudyRequestService:
             raise
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc))
+
+    async def get_history(self, current_user: Any):
+        if not self.supabase.enabled:
+            return {"success": True, "data": []}
+
+        try:
+            created_reqs = (
+                self.supabase.admin.table("study_requests")
+                .select("*, profiles(full_name, mssv, is_verified, bio, avatar_url)")
+                .eq("user_id", current_user.id)
+                .order("created_at", desc=True)
+                .execute()
+            )
+            created_data = created_reqs.data or []
+
+            joined_members = (
+                self.supabase.admin.table("study_request_members")
+                .select("request_id")
+                .eq("user_id", current_user.id)
+                .execute()
+            )
+            
+            joined_data = []
+            if joined_members.data:
+                req_ids = [m["request_id"] for m in joined_members.data]
+                if req_ids:
+                    joined_reqs = (
+                        self.supabase.admin.table("study_requests")
+                        .select("*, profiles(full_name, mssv, is_verified, bio, avatar_url)")
+                        .in_("id", req_ids)
+                        .execute()
+                    )
+                    joined_data = joined_reqs.data or []
+
+            # Using list(dict.fromkeys()) logic for distinct entries based on ID
+            all_reqs = {r["id"]: r for r in created_data + joined_data}.values()
+            sorted_reqs = sorted(all_reqs, key=lambda x: x.get("created_at", ""), reverse=True)
+
+            return {"success": True, "data": sorted_reqs}
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc))
+
