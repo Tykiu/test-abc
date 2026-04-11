@@ -20,15 +20,20 @@ class VerificationService:
             }
 
         try:
-            user_res = self.supabase.admin.auth.admin.get_user_by_id(current_user.id)
-            email = user_res.user.email
+            profile_res = self.supabase.admin.table("profiles").select("mssv").eq("id", current_user.id).single().execute()
+            if not profile_res.data or not profile_res.data.get("mssv"):
+                raise HTTPException(status_code=400, detail="Không tìm thấy MSSV của bạn")
+            
+            mssv = profile_res.data["mssv"]
+            uit_email = f"{mssv}@gm.uit.edu.vn"
+
             anon_client = self.supabase.create_anon_client()
             anon_client.auth.sign_in_with_otp(
-                {"email": email, "options": {"should_create_user": False}}
+                {"email": uit_email, "options": {"should_create_user": True}}
             )
             return {
                 "success": True,
-                "message": f"Đã gửi mã OTP đến {email}. Kiểm tra hộp thư trong 10 phút.",
+                "message": f"Đã gửi mã OTP đến {uit_email}. Kiểm tra hộp thư trong 10 phút.",
             }
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"Không thể gửi OTP: {exc}")
@@ -42,14 +47,33 @@ class VerificationService:
             }
 
         try:
-            user_res = self.supabase.admin.auth.admin.get_user_by_id(current_user.id)
-            email = user_res.user.email
+            profile_res = self.supabase.admin.table("profiles").select("mssv").eq("id", current_user.id).single().execute()
+            if not profile_res.data or not profile_res.data.get("mssv"):
+                raise HTTPException(status_code=400, detail="Không tìm thấy MSSV của bạn")
+            
+            mssv = profile_res.data["mssv"]
+            uit_email = f"{mssv}@gm.uit.edu.vn"
+
             anon_client = self.supabase.create_anon_client()
-            response = anon_client.auth.verify_otp(
-                {"email": email, "token": body.token, "type": "email"}
-            )
-            if not response.user:
-                raise HTTPException(status_code=400, detail="Mã OTP không hợp lệ hoặc đã hết hạn")
+            try:
+                response = anon_client.auth.verify_otp(
+                    {"email": uit_email, "token": body.token, "type": "email"}
+                )
+            except Exception:
+                try:
+                    response = anon_client.auth.verify_otp(
+                        {"email": uit_email, "token": body.token, "type": "magiclink"}
+                    )
+                except Exception:
+                    raise HTTPException(status_code=400, detail="Mã OTP không đúng hoặc đã hết hạn. Vui lòng thử lại.")
+
+            otp_user_id = response.user.id
+            profile_check = self.supabase.admin.table("profiles").select("id").eq("id", otp_user_id).execute()
+            if not profile_check.data:
+                try:
+                    self.supabase.admin.auth.admin.delete_user(otp_user_id)
+                except Exception:
+                    pass
 
             self.supabase.admin.table("profiles").update({"is_verified": True}).eq(
                 "id", current_user.id
