@@ -3,7 +3,7 @@ from typing import Any, Optional
 from fastapi import HTTPException
 
 from config import SupabaseContext
-from schemas import StudyRequestPost
+from schemas import StudyRequestPost, UpdateStudyRequest
 
 
 class StudyRequestService:
@@ -85,6 +85,38 @@ class StudyRequestService:
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc))
 
+    async def update_request(
+        self, request_id: int, body: UpdateStudyRequest, current_user: Any
+    ):
+        if not self.supabase.enabled:
+            return {"success": True, "message": "Demo mode: Cập nhật thành công"}
+
+        try:
+            req_res = (
+                self.supabase.admin.table("study_requests")
+                .select("user_id")
+                .eq("id", request_id)
+                .single()
+                .execute()
+            )
+            if not req_res.data:
+                raise HTTPException(status_code=404, detail="Không tìm thấy bài đăng")
+            if req_res.data["user_id"] != current_user.id:
+                raise HTTPException(
+                    status_code=403, detail="Bạn không có quyền chỉnh sửa bài đăng này"
+                )
+
+            update_data = body.dict(exclude_unset=True)
+            if not update_data:
+                raise HTTPException(status_code=400, detail="Không có thông tin để cập nhật")
+
+            response = self.supabase.admin.table("study_requests").update(update_data).eq("id", request_id).execute()
+            return {"success": True, "data": response.data[0] if response.data else None}
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc))
+
     async def join_request(self, request_id: int, current_user: Any):
         if not self.supabase.enabled:
             return {"success": True, "message": "Demo: Tham gia thành công"}
@@ -140,6 +172,41 @@ class StudyRequestService:
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc))
 
+    async def leave_request(self, request_id: int, current_user: Any):
+        if not self.supabase.enabled:
+            return {"success": True, "message": "Demo: Rời nhóm thành công"}
+
+        try:
+            member_res = (
+                self.supabase.admin.table("study_request_members")
+                .select("id")
+                .eq("request_id", request_id)
+                .eq("user_id", current_user.id)
+                .limit(1)
+                .execute()
+            )
+            if not member_res.data:
+                raise HTTPException(status_code=404, detail="Bạn chưa tham gia bài đăng này")
+
+            self.supabase.admin.table("study_request_members").delete().eq("id", member_res.data[0]["id"]).execute()
+
+            req = self.supabase.admin.table("study_requests").select("current_slots, slots").eq("id", request_id).single().execute()
+            if not req.data:
+                return {"success": True, "message": "Rời nhóm thành công nhưng không tìm thấy bài đăng gốc."}
+
+            new_slots = max(0, (req.data["current_slots"] or 0) - 1)
+            new_status = "open"
+
+            self.supabase.admin.table("study_requests").update(
+                {"current_slots": new_slots, "status": new_status}
+            ).eq("id", request_id).execute()
+
+            return {"success": True, "message": "Rời nhóm thành công!"}
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc))
+
     async def get_history(self, current_user: Any):
         if not self.supabase.enabled:
             return {"success": True, "data": []}
@@ -173,11 +240,32 @@ class StudyRequestService:
                     )
                     joined_data = joined_reqs.data or []
 
-            # Using list(dict.fromkeys()) logic for distinct entries based on ID
-            all_reqs = {r["id"]: r for r in created_data + joined_data}.values()
-            sorted_reqs = sorted(all_reqs, key=lambda x: x.get("created_at", ""), reverse=True)
+            all_reqs_dict = {r["id"]: r for r in created_data + joined_data}
+            
+            all_req_ids = list(all_reqs_dict.keys())
+            if all_req_ids:
+                members_res = (
+                    self.supabase.admin.table("study_request_members")
+                    .select("request_id, profiles(id, full_name, avatar_url, mssv)")
+                    .in_("request_id", all_req_ids)
+                    .execute()
+                )
+                
+                members_by_req_id = {}
+                if members_res.data:
+                    for member in members_res.data:
+                        req_id = member["request_id"]
+                        if req_id not in members_by_req_id:
+                            members_by_req_id[req_id] = []
+                        if member.get("profiles"):
+                            members_by_req_id[req_id].append(member["profiles"])
+
+                for req_id, req_data in all_reqs_dict.items():
+                    creator_id = req_data.get("user_id")
+                    req_data["members"] = [m for m in members_by_req_id.get(req_id, []) if m.get("id") != creator_id]
+
+            sorted_reqs = sorted(all_reqs_dict.values(), key=lambda x: x.get("created_at", ""), reverse=True)
 
             return {"success": True, "data": sorted_reqs}
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc))
-
