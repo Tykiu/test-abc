@@ -87,9 +87,86 @@ class ChatManager {
   }
 }
 
+class VerificationManager {
+  openModal() {
+    if (!currentUser) {
+      openModal("loginModal");
+      return;
+    }
+
+    const displayEmail = currentProfile?.mssv ? `${currentProfile.mssv}@gm.uit.edu.vn` : (currentUser?.email || "-");
+    qs("verifyEmailDisplay").textContent = displayEmail;
+    
+    qs("otpStep1").style.display = "none";
+    qs("otpStep2").style.display = "block";
+    qs("verifyBtn").style.display = "inline-flex";
+    if (qs("resendOtpBtn")) qs("resendOtpBtn").style.display = "inline-flex";
+    
+    qs("otpInput").value = "";
+    clearAlert(qs("verifyError"));
+    clearAlert(qs("verifySuccess"));
+    openModal("verifyModal");
+
+    // Tự động gửi OTP
+    this.sendOtp(false);
+  }
+
+  async sendOtp(isResend = false) {
+    const resendBtn = qs("resendOtpBtn");
+    const verifyBtn = qs("verifyBtn");
+
+    if (isResend) setButtonLoading(resendBtn, true, "Đang gửi...");
+    else setButtonLoading(verifyBtn, true, "Đang gửi OTP...");
+    clearAlert(qs("verifyError"));
+
+    try {
+      if (!apiAvailable || !getToken() || DEMO_PREVIEW_MODE) throw new Error("Backend chưa chạy nên không thể gửi OTP");
+
+      await apiFetch("/api/verify/send-otp", { method: "POST" });
+      showToast(isResend ? "Đã gửi lại mã OTP." : "Đã gửi mã OTP. Vui lòng kiểm tra email.", "success");
+    } catch (error) {
+      showAlert(qs("verifyError"), error.message || "Không gửi được OTP");
+      if (isResend) setButtonLoading(resendBtn, false);
+    } finally {
+      if (!isResend) setButtonLoading(verifyBtn, false);
+    }
+  }
+
+  async verifyOtp() {
+    const otp = qs("otpInput").value.trim();
+    clearAlert(qs("verifyError"));
+    clearAlert(qs("verifySuccess"));
+
+    if (!otp) {
+      showAlert(qs("verifyError"), "Vui lòng nhập mã OTP");
+      return;
+    }
+
+    try {
+      setButtonLoading("verifyBtn", true, "Đang xác thực...");
+      if (!apiAvailable || !getToken() || DEMO_PREVIEW_MODE) throw new Error("Backend chưa chạy nên không thể xác thực OTP");
+
+      await apiFetch("/api/verify/confirm-otp", { method: "POST", body: JSON.stringify({ token: otp }) });
+
+      currentProfile = { ...currentProfile, is_verified: true };
+      persistSession();
+      updateNavbar();
+      renderAccountPage();
+      showAlert(qs("verifySuccess"), "Xác thực thành công", true);
+      showToast("Tài khoản đã được xác thực", "success");
+      setTimeout(() => closeModal("verifyModal"), 1500);
+    } catch (error) {
+      showAlert(qs("verifyError"), error.message || "Xác thực thất bại");
+    } finally {
+      setButtonLoading("verifyBtn", false);
+    }
+  }
+}
+
 const api = new ApiClient();
 const sessionManager = new SessionManager();
 const chatManager = new ChatManager();
+const verificationManager = new VerificationManager();
 
 let apiAvailable = false;
 let currentUser = null;
