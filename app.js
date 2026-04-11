@@ -19,7 +19,13 @@ class ApiClient {
     let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch { data = { detail: text }; }
     
-    if (!response.ok) throw new Error(data.detail || data.message || "Yêu cầu thất bại");
+    if (!response.ok) {
+      let errMsg = data.detail || data.message || "Yêu cầu thất bại";
+      if (typeof errMsg === "object") {
+        errMsg = Array.isArray(errMsg) ? errMsg.map(e => e.msg || JSON.stringify(e)).join(", ") : JSON.stringify(errMsg);
+      }
+      throw new Error(errMsg);
+    }
     return data;
   }
 
