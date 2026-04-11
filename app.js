@@ -841,6 +841,7 @@ function openPostModal() {
     return;
   }
 
+  historyManager.resetPostModal();
   qs("postModalTitle").textContent =
     currentMode === "study" ? "Tạo yêu cầu Study Buddy" : "Tạo yêu cầu Tutor";
   qs("postName").value = currentProfile?.full_name || "";
@@ -1053,6 +1054,14 @@ async function loadConversations() {
       };
     });
     chatCache = newData;
+    chatCache.sort((a, b) => {
+      const aUnread = a.unreadCount > 0 ? 1 : 0;
+      const bUnread = b.unreadCount > 0 ? 1 : 0;
+      if (aUnread !== bUnread) return bUnread - aUnread; // Đưa chat chưa đọc lên trước
+      const timeA = a.lastTime ? new Date(a.lastTime).getTime() : 0;
+      const timeB = b.lastTime ? new Date(b.lastTime).getTime() : 0;
+      return timeB - timeA; // Sau đó mới sắp xếp theo thời gian mới nhất
+    });
     renderChatList();
     updateNavBadge();
   } catch (error) {
@@ -1089,6 +1098,9 @@ function upsertChat(chat) {
   }
 
   chatCache.sort((a, b) => {
+    const aUnread = a.unreadCount > 0 ? 1 : 0;
+    const bUnread = b.unreadCount > 0 ? 1 : 0;
+    if (aUnread !== bUnread) return bUnread - aUnread; // Đưa chat chưa đọc lên trước
     const timeA = a.lastTime ? new Date(a.lastTime).getTime() : 0;
     const timeB = b.lastTime ? new Date(b.lastTime).getTime() : 0;
     return timeB - timeA;
@@ -1670,6 +1682,9 @@ async function init() {
 }
 
 const historyManager = {
+  editingRequestId: null,
+  historyCache: [],
+
   openHistory: async function() {
     if (!currentUser) {
       showToast("Vui lòng đăng nhập để xem lịch sử", "error");
@@ -1683,7 +1698,8 @@ const historyManager = {
     try {
       const res = await apiFetch("/api/requests/history");
       if (res && res.success) {
-        this.renderHistory(res.data);
+        this.historyCache = res.data;
+        this.renderHistory(this.historyCache);
       } else {
         container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">Không thể tải lịch sử</div>';
       }
@@ -1703,7 +1719,9 @@ const historyManager = {
     let html = '<div class="request-grid" style="display: flex; flex-direction: column; gap: 15px;">';
     data.forEach(item => {
       const isCreator = item.user_id === currentUser?.id;
-      const roleText = isCreator ? '<span style="color:var(--primary);font-size:0.85rem;font-weight:bold;margin-left:8px;">(Người tạo)</span>' : '<span style="color:var(--success);font-size:0.85rem;font-weight:bold;margin-left:8px;">(Thành viên)</span>';
+      const roleText = isCreator 
+        ? '<span style="color:var(--primary);font-size:0.85rem;font-weight:bold;margin-left:8px;">(Người tạo)</span>' 
+        : '<span style="color:var(--success);font-size:0.85rem;font-weight:bold;margin-left:8px;">(Thành viên)</span>';
       
       const timeStr = new Date(item.created_at || Date.now()).toLocaleString("vi-VN", {
         day: '2-digit', month: '2-digit', year: 'numeric',
@@ -1727,8 +1745,35 @@ const historyManager = {
         linkHtml = `<div style="font-size:0.9rem; margin-bottom:8px; display:flex; align-items:center; gap:8px;"><i class="fa-solid ${item.method === "online" ? "fa-link" : "fa-map-pin"}" style="color:var(--text-muted); width: 14px;"></i> <a href="${item.method === "online" ? escapeHtml(item.location_or_link) : '#'}" target="_blank" style="color:var(--primary); text-decoration:none; word-break: break-all;">${item.method === "online" ? 'Link buổi học' : escapeHtml(item.location_or_link)}</a></div>`;
       }
 
+      const creatorProfile = item.profiles;
+      const members = item.members || [];
+      const allParticipants = [creatorProfile, ...members].filter(p => p && p.id);
+      const uniqueParticipants = Array.from(new Map(allParticipants.map(p => [p.id, p])).values());
+
+      let membersHtml = '';
+      if (uniqueParticipants.length > 0) {
+          membersHtml = `<div class="history-members-section" style="margin-top:12px;">
+              <strong style="font-size:0.9rem; color: var(--text-muted); margin-bottom:8px; display:block;">Thành viên (${uniqueParticipants.length}/${item.slots || 'N/A'}):</strong>
+              <div class="history-members-list" style="display:flex; flex-wrap:wrap; gap:8px;">
+          `;
+          uniqueParticipants.forEach(p => {
+              const isP_Creator = p.id === item.user_id;
+              const avatarUrl = p.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(p.full_name || 'U')}`;
+              membersHtml += `
+                  <div class="history-member-item" title="${escapeHtml(p.full_name)} (${isP_Creator ? 'Người tạo' : 'Thành viên'})" style="display:flex; align-items:center; gap: 6px; background: var(--bg); padding: 4px 8px; border-radius: 99px; font-size: 0.8rem;">
+                      <img src="${avatarUrl}" alt="${escapeHtml(p.full_name)}" style="width:20px; height:20px; border-radius:50%;">
+                      <span style="color: var(--text);">${escapeHtml(p.full_name.split(' ').pop())} ${isP_Creator ? '👑' : ''}</span>
+                  </div>
+              `;
+          });
+          membersHtml += `</div></div>`;
+      }
+
       let profileHtml = '';
       if (item.profiles) {
+        let actionsHtml = isCreator
+          ? `<button class="btn btn-sm" style="background:var(--surface); border:1px solid var(--border);" onclick="historyManager.openEditRequestModal(${item.id})"><i class="fa-solid fa-pen-to-square"></i> Sửa</button>`
+          : `<button class="btn btn-sm" style="background:var(--danger-bg); border:1px solid var(--danger-border); color: var(--danger);" onclick="historyManager.leaveRequest(${item.id})"><i class="fa-solid fa-arrow-right-from-bracket"></i> Rời nhóm</button>`;
         profileHtml = `
             <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; align-items: center; justify-content: space-between;">
               <div style="display: flex; align-items: center; gap: 10px;">
@@ -1738,7 +1783,10 @@ const historyManager = {
                   ${item.profiles.is_verified ? '<i class="fa-solid fa-circle-check" style="color:var(--primary);" title="Đã xác thực"></i>' : ''}
                 </span>
               </div>
-              ${!isCreator ? `<button class="btn btn-sm" style="border:1px solid var(--border); background:var(--surface); cursor:pointer;" onclick="openChatWith('${encodeURIComponent(item.user_id)}', '${encodeURIComponent(item.profiles.full_name)}', '${encodeURIComponent(item.profiles.mssv || '')}', '${encodeURIComponent(item.profiles.avatar_url || '')}'); closeModal('historyModal');"><i class="fa-solid fa-comment"></i> Chat</button>` : ''}
+              <div style="display:flex; gap:8px;">
+                ${!isCreator ? `<button class="btn btn-sm" style="border:1px solid var(--border); background:var(--surface); cursor:pointer;" onclick="openChatWith('${encodeURIComponent(item.user_id)}', '${encodeURIComponent(item.profiles.full_name)}', '${encodeURIComponent(item.profiles.mssv || '')}', '${encodeURIComponent(item.profiles.avatar_url || '')}'); closeModal('historyModal');"><i class="fa-solid fa-comment"></i> Chat</button>` : ''}
+                ${actionsHtml}
+              </div>
             </div>
         `;
       }
@@ -1766,12 +1814,98 @@ const historyManager = {
           
           ${linkHtml}
           ${noteHtml}
+          ${membersHtml}
           ${profileHtml}
         </div>
       `;
     });
     html += '</div>';
     container.innerHTML = html;
+  },
+
+  openEditRequestModal: function(id) {
+    const request = this.historyCache.find(item => item.id === id);
+    if (!request) {
+      showToast("Không tìm thấy yêu cầu để sửa", "error");
+      return;
+    }
+
+    this.editingRequestId = id;
+
+    qs("postModalTitle").textContent = "Chỉnh sửa yêu cầu";
+    qs("postSubject").value = request.subject || "";
+    qs("postTime").value = request.time || "";
+    qs("postLink").value = request.method === 'online' ? (request.location_or_link || "") : "";
+    qs("postLocation").value = request.method === 'offline' ? (request.location_or_link || "") : "";
+    qs("postNote").value = request.note || "";
+    qs("postSlots").value = request.slots || "4";
+    qs("postMethod").value = request.method || "online";
+    qs("postTutorRole").value = request.tutor_role || "seeking";
+    
+    qs("unverifiedPostWarn").style.display = "none";
+    qs("tutorRoleField").style.display = request.type === "tutor" ? "block" : "none";
+    toggleLocationField();
+
+    const postBtn = qs("postBtn");
+    postBtn.innerHTML = 'Lưu thay đổi';
+    postBtn.onclick = () => historyManager.doEditRequest();
+
+    openModal("postModal");
+  },
+
+  doEditRequest: async function() {
+    if (!this.editingRequestId) return;
+
+    const id = this.editingRequestId;
+    const payload = {
+      subject: qs("postSubject").value.trim(),
+      method: qs("postMethod").value,
+      time: qs("postTime").value.trim(),
+      slots: Number(qs("postSlots").value || 4),
+      note: qs("postNote").value.trim(),
+      location_or_link: qs("postMethod").value === "online" ? qs("postLink").value.trim() : qs("postLocation").value.trim(),
+      tutor_role: currentMode === "tutor" ? qs("postTutorRole").value : null,
+    };
+
+    if (!payload.subject || !payload.time || !payload.location_or_link) {
+      showToast("Vui lòng nhập đủ thông tin bài đăng", "error");
+      return;
+    }
+
+    try {
+      setButtonLoading("postBtn", true, "Đang lưu...");
+      await apiFetch(`/api/requests/${id}`, { method: "PATCH", body: JSON.stringify(payload) });
+      await this.openHistory();
+      await loadCards();
+      this.resetPostModal();
+      closeModal("postModal");
+      showToast("Cập nhật thành công", "success");
+    } catch (error) {
+      showToast(error.message || "Không thể cập nhật", "error");
+    } finally {
+      setButtonLoading("postBtn", false);
+      this.editingRequestId = null;
+    }
+  },
+
+  leaveRequest: async function(id) {
+    if (!confirm("Bạn có chắc muốn rời khỏi nhóm học này?")) return;
+    try {
+      await apiFetch(`/api/requests/${id}/join`, { method: "DELETE" });
+      await this.openHistory();
+      await loadCards();
+      showToast("Rời nhóm thành công", "success");
+    } catch (error) {
+      showToast(error.message || "Không thể rời nhóm", "error");
+    }
+  },
+
+  resetPostModal: function() {
+    this.editingRequestId = null;
+    qs("postModalTitle").textContent = currentMode === "study" ? "Tạo yêu cầu Study Buddy" : "Tạo yêu cầu Tutor";
+    const postBtn = qs("postBtn");
+    postBtn.innerHTML = 'Đăng bài';
+    postBtn.onclick = () => doPost();
   }
 };
 
