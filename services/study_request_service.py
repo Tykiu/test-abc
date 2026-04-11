@@ -231,6 +231,41 @@ class StudyRequestService:
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc))
 
+    async def remove_member(self, request_id: int, user_id: str, current_user: Any):
+        if not self.supabase.enabled:
+            return {"success": True, "message": "Demo: Xóa thành viên thành công"}
+
+        try:
+            # 1. Kiểm tra xem người dùng hiện tại có phải là chủ bài đăng không
+            req = self.supabase.admin.table("study_requests").select("user_id, current_slots").eq("id", request_id).single().execute()
+            if not req.data:
+                raise HTTPException(status_code=404, detail="Không tìm thấy bài đăng")
+            if req.data["user_id"] != current_user.id:
+                raise HTTPException(status_code=403, detail="Chỉ người tạo mới có quyền xóa thành viên")
+
+            # 2. Tìm ID của bảng kết nối
+            member_res = (
+                self.supabase.admin.table("study_request_members")
+                .select("id")
+                .eq("request_id", request_id)
+                .eq("user_id", user_id)
+                .limit(1)
+                .execute()
+            )
+            if not member_res.data:
+                raise HTTPException(status_code=404, detail="Thành viên không nằm trong bài đăng này")
+
+            # 3. Xóa thành viên và cập nhật lại số lượng (slots)
+            self.supabase.admin.table("study_request_members").delete().eq("id", member_res.data[0]["id"]).execute()
+            new_slots = max(0, (req.data["current_slots"] or 0) - 1)
+            self.supabase.admin.table("study_requests").update({"current_slots": new_slots, "status": "open"}).eq("id", request_id).execute()
+
+            return {"success": True, "message": "Đã xóa thành viên khỏi nhóm"}
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc))
+
     async def get_history(self, current_user: Any):
         if not self.supabase.enabled:
             return {"success": True, "data": []}
