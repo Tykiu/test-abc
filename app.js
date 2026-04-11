@@ -1142,6 +1142,11 @@ async function loadConversations() {
       const timeB = b.lastTime ? new Date(b.lastTime).getTime() : 0;
       return timeB - timeA; 
     });
+
+      if (currentChatUser) {
+        currentChatUser = chatCache.find(c => c.id === currentChatUser.id) || currentChatUser;
+      }
+
     renderChatList();
     updateNavBadge();
   } catch (error) {
@@ -1150,8 +1155,11 @@ async function loadConversations() {
 }
 
 function upsertChat(chat) {
+  const id = String(chat.id || "");
+  let index = chatCache.findIndex((item) => item.id === id);
+
   const normalized = {
-    id: String(chat.id || ""),
+    id,
     name: chat.name || "Người dùng",
     mssv: chat.mssv || "",
     avatarUrl: chat.avatarUrl || "",
@@ -1162,42 +1170,23 @@ function upsertChat(chat) {
     loaded: !!chat.loaded,
     draft: chat.draft || "",
   };
-  const id = String(chat.id || "");
-  let index = chatCache.findIndex((item) => item.id === id);
+
   if (index >= 0) {
     const existing = chatCache[index];
     chatCache[index] = {
-      ...chatCache[index],
-      ...normalized,
-      avatarUrl: normalized.avatarUrl || chatCache[index].avatarUrl || "",
-      messages: normalized.messages.length ? normalized.messages : chatCache[index].messages,
-      draft: normalized.draft || chatCache[index].draft || "",
-      unreadCount: normalized.unreadCount !== undefined ? normalized.unreadCount : chatCache[index].unreadCount,
       ...existing,
-      name: chat.name !== undefined ? chat.name : existing.name,
-      mssv: chat.mssv !== undefined ? chat.mssv : existing.mssv,
-      avatarUrl: chat.avatarUrl || existing.avatarUrl || "",
-      last: chat.last !== undefined ? chat.last : existing.last,
-      lastTime: chat.lastTime !== undefined ? chat.lastTime : existing.lastTime,
+      name: chat.name || existing.name,
+      mssv: chat.mssv || existing.mssv,
+      avatarUrl: chat.avatarUrl || existing.avatarUrl,
+      last: chat.last !== undefined && chat.last !== "" ? chat.last : existing.last,
+      lastTime: chat.lastTime !== undefined && chat.lastTime !== "" ? chat.lastTime : existing.lastTime,
       unreadCount: chat.unreadCount !== undefined ? chat.unreadCount : existing.unreadCount,
-      messages: (chat.messages && chat.messages.length) ? chat.messages : existing.messages,
+      messages: chat.messages && chat.messages.length ? chat.messages : existing.messages,
       loaded: chat.loaded !== undefined ? chat.loaded : existing.loaded,
       draft: chat.draft !== undefined ? chat.draft : existing.draft,
     };
   } else {
     chatCache.unshift(normalized);
-    chatCache.unshift({
-      id,
-      name: chat.name || "Người dùng",
-      mssv: chat.mssv || "",
-      avatarUrl: chat.avatarUrl || "",
-      last: chat.last || "",
-      lastTime: chat.lastTime || "",
-      unreadCount: chat.unreadCount || 0,
-      messages: Array.isArray(chat.messages) ? chat.messages : [],
-      loaded: !!chat.loaded,
-      draft: chat.draft || "",
-    });
   }
 
   chatCache.sort((a, b) => {
@@ -1206,7 +1195,6 @@ function upsertChat(chat) {
     return timeB - timeA;
   });
 
-  return chatCache.find((item) => item.id === normalized.id);
   return chatCache.find((item) => item.id === id);
 }
 
@@ -1309,7 +1297,7 @@ async function openChatWith(idEncoded, nameEncoded, mssvEncoded = "", avatarUrlE
     </div>
     <div class="chat-messages" id="chatMsgs"></div>
     <div class="chat-input-row">
-      <input id="chatInput" placeholder="Nhập tin nhắn..." value="${escapeHtml(chat.draft || '')}" oninput="if(currentChatUser) { currentChatUser.draft = this.value; localStorage.setItem('chatDraft_' + currentChatUser.id, this.value); renderChatList(); }" />
+      <input id="chatInput" placeholder="Nhập tin nhắn..." value="${escapeHtml(chat.draft || '')}" oninput="if(currentChatUser) { currentChatUser.draft = this.value; localStorage.setItem('chatDraft_' + currentChatUser.id, this.value); }" />
       <button class="btn-full" id="chatSendBtn" style="width:auto;padding:10px 20px;border-radius:999px" onclick="sendMsg()">
         <i class="fa-solid fa-paper-plane" style="font-size:0.85rem"></i>
       </button>
@@ -1875,7 +1863,7 @@ const historyManager = {
     qs("postMethod").value = request.method || "online";
     qs("postTutorRole").value = request.tutor_role || "seeking";
     
-    qs("unverifiedPostWarn").style.display = "none";
+    qs("unverifiedPostWarn").style.display = currentProfile?.is_verified ? "none" : "flex";
     qs("tutorRoleField").style.display = request.type === "tutor" ? "block" : "none";
     toggleLocationField();
 
@@ -1899,6 +1887,16 @@ const historyManager = {
       location_or_link: qs("postMethod").value === "online" ? qs("postLink").value.trim() : qs("postLocation").value.trim(),
       tutor_role: currentMode === "tutor" ? qs("postTutorRole").value : null,
     };
+
+    // Tự động điều chỉnh trạng thái (Mở/Đóng) nếu thay đổi giới hạn số người
+    const originalReq = this.historyCache.find(r => r.id === id);
+    if (originalReq) {
+      if (payload.slots > (originalReq.current_slots || 0)) {
+        payload.status = "open";
+      } else if (payload.slots <= (originalReq.current_slots || 0)) {
+        payload.status = "closed";
+      }
+    }
 
     if (!payload.subject || !payload.time || !payload.location_or_link) {
       showToast("Vui lòng nhập đủ thông tin bài đăng", "error");
