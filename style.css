@@ -550,7 +550,7 @@ button:disabled {
   justify-content: center;
   padding: 24px;
   background: rgba(9, 26, 39, 0.45);
-  z-index: 9999 !important; 
+  z-index: 9999; 
 }
 
 .modal-overlay.open {

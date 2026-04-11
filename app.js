@@ -1792,8 +1792,9 @@ const historyManager = {
       let profileHtml = '';
       if (item.profiles) {
         let actionsHtml = isCreator
-          ? `<button class="btn btn-sm" style="background:var(--surface); border:1px solid var(--border);" onclick="historyManager.openEditRequestModal(${item.id})"><i class="fa-solid fa-pen-to-square"></i> Sửa</button>`
-          : `<button class="btn btn-sm" style="background:var(--danger-bg); border:1px solid var(--danger-border); color: var(--danger);" onclick="historyManager.leaveRequest(${item.id})"><i class="fa-solid fa-arrow-right-from-bracket"></i> Rời nhóm</button>`;
+          ? `<button class="btn btn-sm" style="background:var(--surface); border:1px solid var(--border);" onclick="historyManager.openEditRequestModal(${item.id})"><i class="fa-solid fa-pen-to-square"></i> Sửa</button>
+             <button class="btn btn-sm" style="background:var(--danger-light); border:1px solid var(--danger); color: var(--danger); margin-left: 6px;" onclick="historyManager.deleteRequest(${item.id})"><i class="fa-solid fa-trash"></i> Xóa</button>`
+          : `<button class="btn btn-sm" style="background:var(--danger-light); border:1px solid var(--danger); color: var(--danger);" onclick="historyManager.leaveRequest(${item.id})"><i class="fa-solid fa-arrow-right-from-bracket"></i> Rời nhóm</button>`;
         profileHtml = `
             <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; align-items: center; justify-content: space-between;">
               <div style="display: flex; align-items: center; gap: 10px;">
@@ -1905,6 +1906,18 @@ const historyManager = {
     } finally {
       setButtonLoading("postBtn", false);
       this.editingRequestId = null;
+    }
+  },
+
+  deleteRequest: async function(id) {
+    if (!confirm("Bạn có chắc chắn muốn xóa yêu cầu này vĩnh viễn?")) return;
+    try {
+      await apiFetch(`/api/requests/${id}`, { method: "DELETE" });
+      await this.openHistory();
+      await loadCards();
+      showToast("Đã xóa yêu cầu thành công", "success");
+    } catch (error) {
+      showToast(error.message || "Không thể xóa yêu cầu", "error");
     }
   },
 
