@@ -498,7 +498,7 @@ function buildCard(card) {
 function renderCards() {
   const cards = getFilteredCards();
   const emptyHtml =
-    `<div class="empty-state"><div class="detail-name">Không tìm thấy kết quả</div><div class="verify-banner-text">Thử đổi bộ lọc hoặc từ khóa tìm kiếm.</div></div>`;
+    `<div class="empty-state" style="padding:20px; text-align:center;"><div class="detail-name" style="margin-bottom:8px; white-space:normal;">Không tìm thấy kết quả</div><div style="font-size:0.85rem; color:var(--text-muted); white-space:normal; word-break:break-word; line-height:1.5;">Thử đổi bộ lọc hoặc từ khóa tìm kiếm.</div></div>`;
 
   qs("cardsGrid").innerHTML = cards.length ? cards.map(buildCard).join("") : emptyHtml;
   qs("modeTitle").textContent =
@@ -1021,7 +1021,7 @@ function renderChatList() {
           }
         )
         .join("")
-    : `<div class="empty-state"><div class="detail-name">Chưa có tin nhắn</div><div class="verify-banner-text">Các cuộc trò chuyện sẽ hiện ở đây khi bạn bắt đầu chat.</div></div>`;
+    : `<div class="empty-state" style="padding:20px; text-align:center;"><div class="detail-name" style="margin-bottom:8px; white-space:normal;">Chưa có tin nhắn</div><div style="font-size:0.85rem; color:var(--text-muted); white-space:normal; word-break:break-word; line-height:1.5;">Các cuộc trò chuyện sẽ hiện ở đây khi bạn bắt đầu chat.</div></div>`;
 }
 
 async function loadConversations() {
@@ -1274,7 +1274,7 @@ function renderChatMessages() {
 
   let html = "";
   if (!currentChatUser.messages.length) {
-    html = `<div class="empty-state"><div class="detail-name">Chưa có tin nhắn</div><div class="verify-banner-text">Hãy bắt đầu cuộc trò chuyện đầu tiên.</div></div>`;
+    html = `<div class="empty-state" style="padding:20px; text-align:center;"><div class="detail-name" style="margin-bottom:8px; white-space:normal;">Chưa có tin nhắn</div><div style="font-size:0.85rem; color:var(--text-muted); white-space:normal; word-break:break-word; line-height:1.5;">Hãy bắt đầu cuộc trò chuyện đầu tiên.</div></div>`;
   } else {
     html = currentChatUser.messages.map((msg) => {
       return `<div class="msg-bubble ${msg.mine ? "msg-mine" : "msg-other"}">${escapeHtml(msg.text)}<div class="msg-time">${escapeHtml(msg.time)}</div></div>`;
