@@ -100,7 +100,6 @@ class VerificationManager {
     qs("otpStep1").style.display = "none";
     qs("otpStep2").style.display = "block";
     qs("verifyBtn").style.display = "inline-flex";
-    if (qs("resendOtpBtn")) qs("resendOtpBtn").style.display = "inline-flex";
     
     qs("otpInput").value = "";
     clearAlert(qs("verifyError"));
@@ -112,11 +111,11 @@ class VerificationManager {
   }
 
   async sendOtp(isResend = false) {
-    const resendBtn = qs("resendOtpBtn");
     const verifyBtn = qs("verifyBtn");
 
-    if (isResend) setButtonLoading(resendBtn, true, "Đang gửi...");
-    else setButtonLoading(verifyBtn, true, "Đang gửi OTP...");
+    if (!isResend) {
+      setButtonLoading(verifyBtn, true, "Đang gửi OTP...");
+    }
     clearAlert(qs("verifyError"));
 
     try {
@@ -126,7 +125,6 @@ class VerificationManager {
       showToast(isResend ? "Đã gửi lại mã OTP." : "Đã gửi mã OTP. Vui lòng kiểm tra email.", "success");
     } catch (error) {
       showAlert(qs("verifyError"), error.message || "Không gửi được OTP");
-      if (isResend) setButtonLoading(resendBtn, false);
     } finally {
       if (!isResend) setButtonLoading(verifyBtn, false);
     }
