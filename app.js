@@ -94,6 +94,7 @@ let activeFilters = { year: "", subject: "", method: "", is_verified: "" };
 let currentChatUser = null;
 let chatCache = [];
 let resetRecoveryActive = false;
+let modalZIndex = 9999;
 
 const DEMO_PREVIEW_MODE = false; 
 
@@ -222,9 +223,10 @@ function formatChatTime(value) {
 function openModal(id) {
   const modal = document.getElementById(id);
   if (modal) {
+    modalZIndex++;
     modal.classList.add("open");
     modal.style.display = "flex"; 
-    modal.style.zIndex = "9999";  
+    modal.style.zIndex = modalZIndex;  
   }
 }
 
@@ -976,14 +978,14 @@ function renderChatList() {
               lastMsgHtml = `<span style="color: var(--danger); font-weight: 600;">[Nháp] ${escapeHtml(chat.draft)}</span>`;
             } else if (chat.last) {
               const isUnread = chat.unreadCount > 0;
-              const fw = isUnread ? 'font-weight: 700; color: var(--c1);' : 'color: var(--text-muted);';
+              const fw = isUnread ? 'font-weight: 800; color: var(--text);' : 'color: var(--text-muted);';
               lastMsgHtml = `<span style="${fw}">${escapeHtml(chat.last)}</span>`;
             } else {
               lastMsgHtml = `<span style="font-style:italic;opacity:0.7;color:var(--text-muted);">Chưa có tin nhắn</span>`;
             }
 
             const unreadBadge = chat.unreadCount > 0 
-              ? `<div style="background: var(--primary, #0084ff); color: #fff; font-size: 0.75rem; font-weight: bold; border-radius: 50%; min-width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; padding: 0 6px; margin-left: 8px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,132,255,0.2);">${chat.unreadCount}</div>` 
+              ? `<div style="background: var(--danger, #ff4d4f); color: #fff; font-size: 0.75rem; font-weight: bold; border-radius: 6px; min-width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; padding: 0 6px; margin-left: 8px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(255,77,79,0.2);">${chat.unreadCount}</div>` 
               : '';
 
             const isActive = currentChatUser && currentChatUser.id === chat.id;
@@ -999,7 +1001,7 @@ function renderChatList() {
               <div class="chat-item-card${isActive ? ' active' : ''}" style="${bgStyle}" onclick="openChatWith('${encodeInline(chat.id)}','${encodeInline(chat.name)}','${encodeInline(chat.mssv || '')}','${encodeInline(chat.avatarUrl || '')}')">
                 <div class="chat-item-avatar-wrap">${avatarContent}</div>
                 <div class="chat-item-info">
-                  <div class="chat-item-name" style="${chat.unreadCount > 0 ? 'font-weight: 700; color: var(--c1);' : 'font-weight: 600; color: var(--c1);'} display: flex; justify-content: space-between; align-items: center;">
+                  <div class="chat-item-name" style="${chat.unreadCount > 0 ? 'font-weight: 800; color: var(--text);' : 'font-weight: 600; color: var(--c1);'} display: flex; justify-content: space-between; align-items: center;">
                     <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(chat.name || 'Người dùng')}</span>
                     ${timeHtml}
                   </div>
@@ -1061,6 +1063,7 @@ async function loadConversations() {
       const timeA = a.lastTime ? new Date(a.lastTime).getTime() : 0;
       const timeB = b.lastTime ? new Date(b.lastTime).getTime() : 0;
       return timeB - timeA; // Sau đó mới sắp xếp theo thời gian mới nhất
+      return timeB - timeA; 
     });
     renderChatList();
     updateNavBadge();
