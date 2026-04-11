@@ -627,9 +627,9 @@ async function forgotPassword() {
   }
 
   try {
-    setButtonLoading("loginBtn", true, "Đang gửi email...");
+    setButtonLoading("loginBtn", true, "Đang gửi OTP...");
     if (!apiAvailable) {
-      throw new Error("Backend chưa chạy nên không thể gửi email đặt lại mật khẩu");
+      throw new Error("Backend chưa chạy nên không thể gửi OTP đặt lại mật khẩu");
     }
 
     const res = await apiFetch("/api/auth/forgot-password", {
@@ -637,11 +637,61 @@ async function forgotPassword() {
       body: JSON.stringify({ email }),
     });
 
-    showAlert(errorEl, res.message || "Đã gửi email đặt lại mật khẩu", true);
+    closeModal("loginModal");
+    qs("forgotOtpEmailDisplay").textContent = email;
+    qs("forgotOtpInput").value = "";
+    clearAlert(qs("forgotOtpError"));
+    openModal("forgotOtpModal");
+    showToast(res.message || "Đã gửi OTP đặt lại mật khẩu", "success");
   } catch (error) {
-    showAlert(errorEl, error.message || "Không thể gửi email đặt lại mật khẩu");
+    showAlert(errorEl, error.message || "Không thể gửi OTP đặt lại mật khẩu");
   } finally {
     setButtonLoading("loginBtn", false);
+  }
+}
+
+async function verifyForgotOtp() {
+  const errorEl = qs("forgotOtpError");
+  const email = (qs("loginEmail")?.value || "").trim();
+  const token = (qs("forgotOtpInput")?.value || "").trim();
+  clearAlert(errorEl);
+
+  if (!token || token.length !== 6) {
+    showAlert(errorEl, "Vui lòng nhập đủ 6 số OTP.");
+    return;
+  }
+
+  try {
+    setButtonLoading("verifyForgotOtpBtn", true, "Đang xác thực...");
+    if (!apiAvailable) {
+      throw new Error("Backend chưa chạy nên không thể xác thực OTP");
+    }
+
+    const res = await apiFetch("/api/auth/verify-reset-otp", {
+      method: "POST",
+      body: JSON.stringify({ email, token }),
+    });
+
+    if (res.success && res.access_token) {
+      closeModal("forgotOtpModal");
+      setToken(res.access_token);
+      if (res.refresh_token) {
+        localStorage.setItem("sb_refresh_token", res.refresh_token);
+      }
+      resetRecoveryActive = true;
+      qs("resetPasswordNew").value = "";
+      qs("resetPasswordConfirm").value = "";
+      clearAlert(qs("resetPasswordError"));
+      clearAlert(qs("resetPasswordSuccess"));
+      openModal("resetPasswordModal");
+      showToast(res.message || "Xác thực OTP thành công", "success");
+    } else {
+      throw new Error("Mã OTP không hợp lệ.");
+    }
+  } catch (error) {
+    showAlert(errorEl, error.message || "Mã OTP không đúng hoặc đã hết hạn.");
+  } finally {
+    setButtonLoading("verifyForgotOtpBtn", false);
   }
 }
 

@@ -386,6 +386,7 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: var(--shadow);
+  max-width: 90vw;
   max-height: 260px;    
   overflow-y: auto;
   z-index: 100;
@@ -1029,13 +1030,16 @@ button:disabled {
   .chat-sidebar {
     width: 100%;
     height: auto;
-    max-height: 30vh;
+    max-height: 38vh;
   }
   .chat-page.open {
     flex-direction: column;
   }
   .chat-main {
-    height: 70vh;
+    height: 62vh;
+  }
+  .chat-input-row {
+    padding: 12px 14px 20px;
   }
 }
 
@@ -1083,16 +1087,29 @@ button:disabled {
 
 @media (max-width: 600px) {
   .search-bar-wrap {
+    flex-direction: column;
     width: 100%;
   }
+  .search-bar {
+    min-width: unset;
+    width: 100%;
+  }
+  .btn-create {
+    width: 100%;
+    justify-content: center;
+  }
   
-  .nav-logo { font-size: 1.25rem; }
-  .nav-logo svg { width: 32px; height: 32px; }
-  .nav-login-btn { padding: 8px 14px; font-size: 0.85rem; }
-  .nav-register-btn { padding: 8px 14px; font-size: 0.85rem; }
+  .nav-logo { font-size: 1.15rem; gap: 8px; }
+  .nav-logo svg { width: 28px; height: 28px; }
+  .nav-login-btn { padding: 8px 12px; font-size: 0.8rem; }
+  .nav-register-btn { padding: 8px 12px; font-size: 0.8rem; }
+  .mode-btn { padding: 8px 12px; font-size: 0.85rem; }
 
   .modal-overlay {
     padding: 12px;
+  }
+  .modal {
+    padding: 20px 16px;
   }
 
   .form-row {
@@ -1102,8 +1119,19 @@ button:disabled {
   .mode-btn,
   .btn-ghost,
   .btn-primary,
-  .btn-create {
+  .btn-create,
+  .btn-full {
     flex: 1;
+  }
+  
+  .toast-container {
+    left: 16px;
+    right: 16px;
+    top: 16px;
+  }
+  .toast {
+    text-align: center;
+    justify-content: center;
   }
   
   .account-wrap {

@@ -89,6 +89,19 @@ class ForgotPasswordRequest(BaseModel):
         return InputValidator.validate_email(value)
 
 
+class VerifyResetOtpRequest(BaseModel):
+    email: str
+    token: str
+
+    @validator("email")
+    def validate_email(cls, value):
+        return InputValidator.validate_email(value)
+
+    @validator("token")
+    def validate_token(cls, value):
+        return InputValidator.validate_otp(value)
+
+
 class UpdatePasswordRequest(BaseModel):
     password: str
     password_confirm: str
@@ -100,7 +113,7 @@ class UpdatePasswordRequest(BaseModel):
     @validator("password_confirm")
     def passwords_match(cls, value, values):
         if "password" in values and value != values["password"]:
-            raise ValueError("Mat khau xac nhan khong khop")
+            raise ValueError("Mật khẩu xác nhận không khớp")
         return value
 
 

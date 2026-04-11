@@ -14,6 +14,7 @@ from schemas import (
     StudyRequestPost,
     UpdatePasswordRequest,
     UpdateProfileRequest,
+    VerifyResetOtpRequest,
 )
 from services.auth_service import AuthService
 from services.message_service import MessageService
@@ -80,6 +81,10 @@ class StudyBuddyApplication:
         async def forgot_password(body: ForgotPasswordRequest):
             return await self.auth_service.forgot_password(body)
 
+        @app.post("/api/auth/verify-reset-otp", summary="Xac thuc ma OTP dat lai mat khau")
+        async def verify_reset_otp(body: VerifyResetOtpRequest):
+            return await self.auth_service.verify_reset_otp(body)
+
         @app.post("/api/auth/update-password", summary="Cap nhat mat khau moi")
         async def update_password(
             body: UpdatePasswordRequest, current_user: Any = current_user_dep
@@ -145,7 +150,7 @@ class StudyBuddyApplication:
         ):
             return await self.message_service.get_messages(other_user_id, current_user, limit)
 
-        @app.post("/api/messages", summary="Gui tin nhan")
+        @app.post("/api/messages", summary="Gửi tin nhắn")
         async def send_message(body: MessageRequest, current_user: Any = current_user_dep):
             return await self.message_service.send_message(body, current_user)
 
@@ -168,8 +173,8 @@ if __name__ == "__main__":
     print("\n" + "=" * 55)
     print("  UIT Study Buddy - Backend API v2.0")
     print("=" * 55)
-    print(f"  Supabase: {'Da cau hinh' if study_buddy.supabase.enabled else 'Demo mode'}")
-    print("  Xac thuc: Email OTP (@gm.uit.edu.vn)")
+    print(f"  Supabase: {'Đã cấu hình' if study_buddy.supabase.enabled else 'Demo mode'}")
+    print("  Xác thực: Email OTP (@gm.uit.edu.vn)")
     print("  API docs: http://localhost:8000/docs")
     print("=" * 55 + "\n")
     uvicorn.run("backend:app", host="0.0.0.0", port=8000, reload=True)

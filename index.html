@@ -59,6 +59,7 @@
           <hr class="dropdown-divider" />
           <button class="dropdown-item" onclick="openAccount()"> <i class="fa-solid fa-user"></i>Tài khoản của
             tôi</button>
+          <button class="dropdown-item" onclick="historyManager.openHistory()"><i class="fa-solid fa-clock-rotate-left"></i>Lịch sử tham gia</button>
           <button class="dropdown-item danger" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i>Đăng
             xuất</button>
           <hr class="dropdown-divider" />
@@ -133,7 +134,7 @@
     <div class="cards-section">
       <div class="section-header">
         <div class="section-title" id="modeTitle">👥 Study Buddy — Học nhóm cùng tiến</div>
-        <div class="section-count" id="cardCount">6 bài đăng</div>
+        <div class="section-count" id="cardCount">0 bài đăng</div>
       </div>
       <div class="cards-grid" id="cardsGrid"></div>
     </div>
@@ -193,6 +194,27 @@
     </div>
   </div>
 
+  <!-- FORGOT OTP -->
+  <div class="modal-overlay" id="forgotOtpModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">🔑 Nhập mã OTP</div>
+        <button class="modal-close" onclick="closeModal('forgotOtpModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-error" id="forgotOtpError"></div>
+        <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:15px;line-height:1.5">
+          Chúng tôi đã gửi một mã OTP gồm 6 chữ số đến email <b id="forgotOtpEmailDisplay"></b>. Vui lòng kiểm tra hộp thư (cả mục Spam) và nhập mã vào bên dưới.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Mã OTP (6 chữ số)</label>
+          <input type="text" class="form-input" id="forgotOtpInput" placeholder="VD: 123456" maxlength="6">
+        </div>
+        <button class="btn-full" id="verifyForgotOtpBtn" onclick="verifyForgotOtp()">Xác nhận mã OTP</button>
+      </div>
+    </div>
+  </div>
+
   <!-- REGISTER -->
   <div class="modal-overlay" id="registerModal">
     <div class="modal">
@@ -216,13 +238,13 @@
           <label class="form-label">Mã số sinh viên (MSSV)</label>
           <input type="text" class="form-input" id="regMSSV" placeholder="20521234" maxlength="8"
             oninput="validateMSSV(this)">
-          <div class="form-hint">8 chữ số: 4 số đầu là năm nhập học (2552, 2332…)</div>
+          <div class="form-hint">8 chữ số: 4 số đầu là năm nhập học (2552, 2352,...)</div>
           <div class="form-error" id="regMSSVErr">MSSV phải đúng 8 chữ số</div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Mật khẩu</label>
-            <input type="password" class="form-input" id="regPass" placeholder="Tối thiểu 8 ký tự">
+            <input type="password" class="form-input" id="regPass" placeholder="Tối thiểu 8 ký tự, gồm chữ và số">
             <div class="form-error" id="regPassErr">Mật khẩu ≥ 8 ký tự, gồm chữ và số</div>
           </div>
           <div class="form-group">
@@ -457,8 +479,8 @@
           <p>UIT Study Buddy là nền tảng kết nối học thuật dành riêng cho sinh viên Trường Đại học Công nghệ Thông tin
             (UIT). Người dùng chỉ được sử dụng dịch vụ với mục đích học tập và trao đổi kiến thức.</p>
           <h3>2. Yêu cầu xác thực</h3>
-          <p>Để đảm bảo tính tin cậy, sinh viên cần xác thực thẻ sinh viên UIT trước khi sử dụng đầy đủ các tính năng.
-            Tài khoản chưa xác thực bị giới hạn một số chức năng nhạy cảm.</p>
+          <p>Để đảm bảo tính tin cậy, sinh viên cần xác thực trước khi sử dụng đầy đủ các tính năng.
+            Tài khoản chưa xác thực bị giới hạn một số chức năng.</p>
           <h3>3. Quy tắc ứng xử</h3>
           <p>Nghiêm cấm đăng thông tin sai lệch, quảng cáo không liên quan, quấy rối hay xúc phạm người dùng khác. Mọi
             vi phạm có thể dẫn đến khóa tài khoản vĩnh viễn.</p>
@@ -481,11 +503,29 @@
     </div>
   </div>
 
+  <!-- HISTORY MODAL -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div class="modal-title">🕰️ Lịch sử tham gia lớp học</div>
+        <button class="modal-close" onclick="closeModal('historyModal')">✕</button>
+      </div>
+      <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+        <div id="historyList">
+          <!-- History items will be rendered here -->
+          <div style="text-align:center;color:var(--text-muted);padding:20px;">Đang tải dữ liệu...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-full" onclick="closeModal('historyModal')">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST CONTAINER -->
   <div class="toast-container" id="toastContainer"></div>
 
 
-  <script src="demo-data.js"></script>
   <script src="app.js?v=10"></script>
 </body>
 
