@@ -1396,7 +1396,7 @@ function renderAccountPage() {
       ${
         profile.is_verified
           ? `<div class="verified-banner" style="border-radius:16px;display:flex;align-items:center;gap:12px;padding:16px 20px;margin-bottom:24px;"><i class="fa-solid fa-circle-check" style="font-size:1.3rem;"></i><span style="font-weight:700;font-size:0.95rem;">Tài khoản sinh viên đã xác thực</span></div>`
-          : `<div class="verify-banner" style="border-radius:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;margin-bottom:24px;"><div><div class="verify-banner-title" style="font-weight:800;color:var(--warn);margin-bottom:4px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-triangle-exclamation"></i> Chưa xác thực</div><div class="verify-banner-text" style="font-size:0.85rem;">Xác nhận email trường để mở khóa tính năng.</div></div><button class="btn-primary" style="flex-shrink:0;padding:10px 18px;font-size:0.85rem;border-radius:99px;" onclick="openVerifyModal()">Xác thực</button></div>`
+          : `<div class="verify-banner" style="border-radius:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;margin-bottom:24px;"><div><div class="verify-banner-title" style="font-weight:800;color:var(--warn);margin-bottom:4px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-triangle-exclamation"></i> Chưa xác thực</div><div class="verify-banner-text" style="font-size:0.85rem;">Xác nhận email trường để mở khóa tính năng.</div></div><button class="btn-primary" style="flex-shrink:0;padding:10px 18px;font-size:0.85rem;border-radius:99px;" onclick="verificationManager.openModal()">Xác thực</button></div>`
       }
 
       <!-- Info Group -->
@@ -1530,83 +1530,6 @@ async function doEdit() {
   }
 }
 
-function openVerifyModal() {
-  if (!currentUser) {
-    openModal("loginModal");
-    return;
-  }
-
-  const displayEmail = currentUser?.email || "-";
-  qs("verifyEmailDisplay").textContent = displayEmail;
-  qs("otpStep1").style.display = "block";
-  qs("otpStep2").style.display = "none";
-  qs("verifyBtn").style.display = "none";
-  qs("otpInput").value = "";
-  clearAlert(qs("verifyError"));
-  clearAlert(qs("verifySuccess"));
-  openModal("verifyModal");
-}
-
-async function doSendOtp() {
-  try {
-    setButtonLoading("sendOtpBtn", true, "Đang gửi OTP...");
-    if (!apiAvailable || !getToken() || DEMO_PREVIEW_MODE) {
-      throw new Error("Backend chưa chạy nên không thể gửi OTP");
-    }
-
-    await apiFetch("/api/verify/send-otp", { method: "POST" });
-    qs("otpStep1").style.display = "none";
-    qs("otpStep2").style.display = "block";
-    qs("verifyBtn").style.display = "inline-flex";
-  } catch (error) {
-    showAlert(qs("verifyError"), error.message || "Không gửi được OTP");
-  } finally {
-    setButtonLoading("sendOtpBtn", false);
-  }
-}
-
-function resetOtpStep() {
-  qs("otpStep1").style.display = "block";
-  qs("otpStep2").style.display = "none";
-  qs("verifyBtn").style.display = "none";
-  qs("otpInput").value = "";
-  clearAlert(qs("verifyError"));
-  clearAlert(qs("verifySuccess"));
-}
-
-async function doVerifyOtp() {
-  const otp = qs("otpInput").value.trim();
-  clearAlert(qs("verifyError"));
-  clearAlert(qs("verifySuccess"));
-
-  if (!otp) {
-    showAlert(qs("verifyError"), "Vui lòng nhập mã OTP");
-    return;
-  }
-
-  try {
-    setButtonLoading("verifyBtn", true, "Đang xác thực...");
-    if (!apiAvailable || !getToken() || DEMO_PREVIEW_MODE) {
-      throw new Error("Backend chưa chạy nên không thể xác thực OTP");
-    }
-
-    await apiFetch("/api/verify/confirm-otp", {
-      method: "POST",
-      body: JSON.stringify({ token: otp }),
-    });
-
-    currentProfile = { ...currentProfile, is_verified: true };
-    persistSession();
-    updateNavbar();
-    renderAccountPage();
-    showAlert(qs("verifySuccess"), "Xác thực thành công", true);
-    showToast("Tài khoản đã được xác thực", "success");
-  } catch (error) {
-    showAlert(qs("verifyError"), error.message || "Xác thực thất bại");
-  } finally {
-    setButtonLoading("verifyBtn", false);
-  }
-}
 
 function initOverlayClose() {
   document.querySelectorAll(".modal-overlay").forEach((overlay) => {

@@ -236,6 +236,7 @@
           <label class="form-label">Mã số sinh viên (MSSV)</label>
           <input type="text" class="form-input" id="regMSSV" placeholder="20521234" maxlength="8"
             oninput="validateMSSV(this)">
+          <div class="form-hint">8 chữ số: 4 số đầu là năm nhập học (2552, 2352,...)</div>
           <div class="form-error" id="regMSSVErr">MSSV phải đúng 8 chữ số</div>
         </div>
         <div class="form-row">
@@ -355,24 +356,21 @@
           Kiểm tra hộp thư và nhập mã trong vòng 10 phút.
         </div>
 
-        <!-- Bước 1: Gửi OTP -->
-        <div id="otpStep1">
-          <div style="margin-bottom:8px;font-size:0.88rem;color:var(--text-muted)">Email trường của bạn:</div>
-          <div
-            style="font-weight:600;font-size:1rem;padding:10px 14px;background:var(--bg-card);border-radius:8px;border:1.5px solid var(--border);margin-bottom:16px"
-            id="verifyEmailDisplay">—</div>
-          <button class="btn-full" id="sendOtpBtn" onclick="doSendOtp()">📨 Gửi mã OTP về email</button>
-        </div>
+        <!-- Bước 1: Gửi OTP (Đã được tự động hóa nên ẩn đi) -->
+        <div id="otpStep1" style="display:none"></div>
 
         <!-- Bước 2: Nhập OTP -->
         <div id="otpStep2" style="display:none">
-          <div style="margin-bottom:8px;font-size:0.88rem;color:var(--text-muted)">Nhập mã 6 chữ số đã được gửi đến
-            email của bạn:</div>
+          <div style="margin-bottom:8px;font-size:0.88rem;color:var(--text-muted)">Mã OTP đang được gửi đến email sinh viên của bạn:</div>
+          <div
+            style="font-weight:600;font-size:1rem;padding:10px 14px;background:var(--bg-card);border-radius:8px;border:1.5px solid var(--border);margin-bottom:16px;text-align:center"
+            id="verifyEmailDisplay">—</div>
+          <div style="margin-bottom:8px;font-size:0.88rem;color:var(--text-muted)">Vui lòng nhập mã 6 chữ số:</div>
           <input type="text" id="otpInput" class="input-field" placeholder="● ● ● ● ● ●" maxlength="6"
             style="font-size:1.5rem;letter-spacing:0.55rem;text-align:center;font-weight:700;padding:14px 10px"
             oninput="this.value=this.value.replace(/[^0-9]/g,'')">
           <div style="margin-top:10px;font-size:0.82rem;color:var(--text-muted);text-align:center">
-            Không nhận được mã? <a href="#" onclick="resetOtpStep();return false;"
+            Không nhận được mã? <a href="#" onclick="verificationManager.sendOtp(true);return false;"
               style="color:var(--primary);font-weight:600">Gửi lại</a>
           </div>
         </div>
@@ -383,8 +381,10 @@
       <div class="modal-footer">
         <button class="btn-full secondary" style="width:auto;padding:10px 20px"
           onclick="closeModal('verifyModal')">Hủy</button>
+        <button class="btn-full secondary" id="resendOtpBtn" style="width:auto;padding:10px 20px;display:none"
+          onclick="verificationManager.sendOtp(true)">Gửi lại mã</button>
         <button class="btn-full" id="verifyBtn" style="width:auto;padding:10px 28px;display:none"
-          onclick="doVerifyOtp()">✅ Xác nhận mã OTP</button>
+          onclick="verificationManager.verifyOtp()">✅ Xác nhận mã OTP</button>
       </div>
     </div>
   </div>
