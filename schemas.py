@@ -5,14 +5,14 @@ from pydantic import BaseModel, validator
 
 
 class InputValidator:
-    EMAIL_PATTERN = r"^[a-zA-Z0-9._%+\-]+@gm\.uit\.edu\.vn$"
+    EMAIL_PATTERN = r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
     MSSV_PATTERN = r"^\d{8}$"
     OTP_PATTERN = r"^\d{6}$"
 
     @classmethod
     def validate_email(cls, value: str) -> str:
         if not re.match(cls.EMAIL_PATTERN, value):
-            raise ValueError("Email phải có đuôi @gm.uit.edu.vn")
+            raise ValueError("Email không hợp lệ")
         return value
 
     @classmethod
