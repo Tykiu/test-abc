@@ -28,17 +28,17 @@ class VerificationService:
             )
             return {
                 "success": True,
-                "message": f"Da gui ma OTP den {email}. Kiem tra hop thu trong 10 phut.",
+                "message": f"Đã gửi mã OTP đến {email}. Kiểm tra hộp thư trong 10 phút.",
             }
         except Exception as exc:
-            raise HTTPException(status_code=500, detail=f"Khong the gui OTP: {exc}")
+            raise HTTPException(status_code=500, detail=f"Không thể gửi OTP: {exc}")
 
     async def confirm_otp(self, body: OtpConfirmRequest, current_user: Any):
         if not self.supabase.enabled:
             return {
                 "success": True,
                 "verified": True,
-                "message": "Demo: Xac thuc thanh cong! Email truong da duoc xac nhan.",
+                "message": "Demo: Xác thực thành công! Email trường đã được xác nhận.",
             }
 
         try:
@@ -49,7 +49,7 @@ class VerificationService:
                 {"email": email, "token": body.token, "type": "email"}
             )
             if not response.user:
-                raise HTTPException(status_code=400, detail="Ma OTP khong hop le hoac da het han")
+                raise HTTPException(status_code=400, detail="Mã OTP không hợp lệ hoặc đã hết hạn")
 
             self.supabase.admin.table("profiles").update({"is_verified": True}).eq(
                 "id", current_user.id
@@ -57,12 +57,12 @@ class VerificationService:
             return {
                 "success": True,
                 "verified": True,
-                "message": "Xac thuc thanh cong! Email truong da duoc xac nhan.",
+                "message": "Xác thực thành công! Email trường đã được xác nhận.",
             }
         except HTTPException:
             raise
         except Exception:
             raise HTTPException(
                 status_code=400,
-                detail="Ma OTP khong dung hoac da het han. Vui long thu lai.",
+                detail="Mã OTP không đúng hoặc đã hết hạn. Vui lòng thử lại.",
             )

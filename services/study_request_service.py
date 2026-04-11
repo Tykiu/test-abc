@@ -60,11 +60,11 @@ class StudyRequestService:
             if not profile_res.data or not profile_res.data.get("is_verified"):
                 raise HTTPException(
                     status_code=403,
-                    detail="Ban can xac thuc email truong de su dung tinh nang Gia su",
+                    detail="Bạn cần xác thực email trường để sử dụng tính năng Gia sư",
                 )
 
         if not self.supabase.enabled:
-            return {"success": True, "message": "Demo mode: Tao bai dang thanh cong"}
+            return {"success": True, "message": "Demo mode: Tạo bài đăng thành công"}
 
         try:
             payload = {
@@ -87,7 +87,7 @@ class StudyRequestService:
 
     async def join_request(self, request_id: int, current_user: Any):
         if not self.supabase.enabled:
-            return {"success": True, "message": "Demo: Tham gia thanh cong"}
+            return {"success": True, "message": "Demo: Tham gia thành công"}
 
         try:
             req = (
@@ -98,13 +98,13 @@ class StudyRequestService:
                 .execute()
             )
             if not req.data:
-                raise HTTPException(status_code=404, detail="Khong tim thay bai dang")
+                raise HTTPException(status_code=404, detail="Không tìm thấy bài đăng")
 
             request_data = req.data
             if request_data["user_id"] == current_user.id:
-                raise HTTPException(status_code=400, detail="Ban khong the tham gia bai dang cua chinh minh")
+                raise HTTPException(status_code=400, detail="Bạn không thể tham gia bài đăng của chính mình")
             if request_data["status"] == "closed":
-                raise HTTPException(status_code=400, detail="Bai dang nay da day cho")
+                raise HTTPException(status_code=400, detail="Bài đăng này đã đầy chỗ")
 
             existing_member = (
                 self.supabase.admin.table("study_request_members")
@@ -115,7 +115,7 @@ class StudyRequestService:
                 .execute()
             )
             if existing_member.data:
-                raise HTTPException(status_code=409, detail="Ban da tham gia bai dang nay roi")
+                raise HTTPException(status_code=409, detail="Bạn đã tham gia bài đăng này rồi")
 
             self.supabase.admin.table("study_request_members").insert(
                 {"request_id": request_id, "user_id": current_user.id}
@@ -130,7 +130,7 @@ class StudyRequestService:
 
             return {
                 "success": True,
-                "message": "Tham gia thanh cong!",
+                "message": "Tham gia thành công!",
                 "current_slots": new_slots,
                 "status": new_status,
                 "is_full": new_status == "closed",
