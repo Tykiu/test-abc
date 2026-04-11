@@ -199,7 +199,7 @@ function clearRecoveryHash() {
 }
 
 function validateUitEmail(email) {
-  return /^[a-zA-Z0-9._%+\-]+@gm\.uit\.edu\.vn$/.test(email);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function validatePassword(password) {
@@ -583,7 +583,7 @@ async function doLogin() {
     return;
   }
   if (!validateUitEmail(email)) {
-    showAlert(errorEl, "Email phải có đuôi @gm.uit.edu.vn");
+    showAlert(errorEl, "Email không hợp lệ");
     return;
   }
 
@@ -620,11 +620,11 @@ async function forgotPassword() {
   clearAlert(errorEl);
 
   if (!email) {
-    showAlert(errorEl, "Nhập email UIT trước khi đặt lại mật khẩu");
+    showAlert(errorEl, "Nhập email trước khi đặt lại mật khẩu");
     return;
   }
   if (!validateUitEmail(email)) {
-    showAlert(errorEl, "Email phải có đuôi @gm.uit.edu.vn");
+    showAlert(errorEl, "Email không hợp lệ");
     return;
   }
 
@@ -1530,7 +1530,8 @@ function openVerifyModal() {
     return;
   }
 
-  qs("verifyEmailDisplay").textContent = currentUser.email || "-";
+  const uitEmail = currentProfile?.mssv ? `${currentProfile.mssv}@gm.uit.edu.vn` : (currentUser.email || "-");
+  qs("verifyEmailDisplay").textContent = uitEmail;
   qs("otpStep1").style.display = "block";
   qs("otpStep2").style.display = "none";
   qs("verifyBtn").style.display = "none";
