@@ -117,6 +117,30 @@ class StudyRequestService:
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc))
 
+    async def delete_request(self, request_id: int, current_user: Any):
+        if not self.supabase.enabled:
+            return {"success": True, "message": "Demo mode: Xóa thành công"}
+
+        try:
+            req_res = (
+                self.supabase.admin.table("study_requests")
+                .select("user_id")
+                .eq("id", request_id)
+                .single()
+                .execute()
+            )
+            if not req_res.data:
+                raise HTTPException(status_code=404, detail="Không tìm thấy bài đăng")
+            if req_res.data["user_id"] != current_user.id:
+                raise HTTPException(status_code=403, detail="Bạn không có quyền xóa bài đăng này")
+
+            self.supabase.admin.table("study_requests").delete().eq("id", request_id).execute()
+            return {"success": True, "message": "Xóa bài đăng thành công"}
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc))
+
     async def join_request(self, request_id: int, current_user: Any):
         if not self.supabase.enabled:
             return {"success": True, "message": "Demo: Tham gia thành công"}
