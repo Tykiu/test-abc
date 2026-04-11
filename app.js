@@ -974,30 +974,37 @@ function renderChatList() {
             if (chat.draft) {
               lastMsgHtml = `<span style="color: var(--danger); font-weight: 600;">[Nháp] ${escapeHtml(chat.draft)}</span>`;
             } else if (chat.last) {
-              const fw = chat.unreadCount > 0 ? 'font-weight: 600; color: var(--text);' : '';
+              const isUnread = chat.unreadCount > 0;
+              const fw = isUnread ? 'font-weight: 700; color: var(--c1);' : 'color: var(--text-muted);';
               lastMsgHtml = `<span style="${fw}">${escapeHtml(chat.last)}</span>`;
             } else {
-              lastMsgHtml = `<span style="font-style:italic;opacity:0.7">Chưa có tin nhắn</span>`;
+              lastMsgHtml = `<span style="font-style:italic;opacity:0.7;color:var(--text-muted);">Chưa có tin nhắn</span>`;
             }
 
             const unreadBadge = chat.unreadCount > 0 
-              ? `<div style="background: var(--danger); color: #fff; font-size: 0.65rem; font-weight: bold; border-radius: 10px; padding: 2px 6px; margin-left: 8px;">${chat.unreadCount}</div>` 
+              ? `<div style="background: var(--primary, #0084ff); color: #fff; font-size: 0.75rem; font-weight: bold; border-radius: 50%; min-width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; padding: 0 6px; margin-left: 8px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,132,255,0.2);">${chat.unreadCount}</div>` 
               : '';
 
             const isActive = currentChatUser && currentChatUser.id === chat.id;
             const avatarContent = chat.avatarUrl
               ? `<img src="${escapeHtml(chat.avatarUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.textContent='${escapeHtml(initial)}'">`
               : escapeHtml(initial);
+            
+            const bgStyle = chat.unreadCount > 0 && !isActive ? 'background: rgba(0, 132, 255, 0.05); border-radius: 8px;' : '';
+            const timeStr = chat.lastTime ? formatChatTime(chat.lastTime) : '';
+            const timeHtml = timeStr ? `<span style="font-size: 0.75rem; margin-left: 8px; flex-shrink: 0; ${chat.unreadCount > 0 ? 'font-weight: 600; color: var(--primary, #0084ff);' : 'color: var(--text-muted);'}">${timeStr}</span>` : '';
+
             return `
-              <div class="chat-item-card${isActive ? ' active' : ''}" onclick="openChatWith('${encodeInline(chat.id)}','${encodeInline(chat.name)}','${encodeInline(chat.mssv || '')}','${encodeInline(chat.avatarUrl || '')}')">
+              <div class="chat-item-card${isActive ? ' active' : ''}" style="${bgStyle}" onclick="openChatWith('${encodeInline(chat.id)}','${encodeInline(chat.name)}','${encodeInline(chat.mssv || '')}','${encodeInline(chat.avatarUrl || '')}')">
                 <div class="chat-item-avatar-wrap">${avatarContent}</div>
                 <div class="chat-item-info">
-                  <div class="chat-item-name" style="${chat.unreadCount > 0 ? 'font-weight: 800;' : ''} display: flex; justify-content: space-between; align-items: center;">
+                  <div class="chat-item-name" style="${chat.unreadCount > 0 ? 'font-weight: 700; color: var(--c1);' : 'font-weight: 600; color: var(--c1);'} display: flex; justify-content: space-between; align-items: center;">
                     <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(chat.name || 'Người dùng')}</span>
-                    ${unreadBadge}
+                    ${timeHtml}
                   </div>
-                  <div class="chat-item-last" style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="chat-item-last" style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
                     <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${lastMsgHtml}</span>
+                    ${unreadBadge}
                   </div>
                 </div>
               </div>
@@ -1027,6 +1034,11 @@ async function loadConversations() {
     const newData = (res.data || []).map((item) => {
       const existing = chatCache.find((c) => c.id === String(item.user_id));
       const isActive = currentChatUser && currentChatUser.id === String(item.user_id);
+      
+      if (isActive && item.unread_count > 0) {
+        apiFetch(`/api/messages/${encodeURIComponent(item.user_id)}/read`, { method: "POST" }).catch(console.error);
+      }
+
       return {
         id: String(item.user_id),
         name: item.full_name || "Người dùng",
@@ -1101,6 +1113,7 @@ async function loadMessagesForChat(chat) {
     text: msg.content || "",
     time: formatChatTime(msg.created_at),
     createdAt: msg.created_at || "",
+    isRead: msg.is_read
   }));
   chat.loaded = true;
 
@@ -1133,6 +1146,7 @@ async function openChatWith(idEncoded, nameEncoded, mssvEncoded = "", avatarUrlE
     const currentInput = qs("chatInput");
     if (currentInput) {
       currentChatUser.draft = currentInput.value;
+      localStorage.setItem('chatDraft_' + currentChatUser.id, currentInput.value);
     }
   }
 
@@ -1140,6 +1154,8 @@ async function openChatWith(idEncoded, nameEncoded, mssvEncoded = "", avatarUrlE
   const name = decodeInline(nameEncoded);
   const mssv = decodeInline(mssvEncoded);
   const avatarUrl = decodeInline(avatarUrlEncoded);
+  
+  const draft = localStorage.getItem('chatDraft_' + id) || '';
 
   const chat = upsertChat({
     id,
@@ -1148,9 +1164,17 @@ async function openChatWith(idEncoded, nameEncoded, mssvEncoded = "", avatarUrlE
     avatarUrl,
     messages: [],
     loaded: false,
+    draft,
   });
   currentChatUser = chat;
-  currentChatUser.unreadCount = 0;
+  
+  if (chat.unreadCount > 0) {
+    currentChatUser.unreadCount = 0;
+    if (apiAvailable && getToken()) {
+      apiFetch(`/api/messages/${encodeURIComponent(id)}/read`, { method: "POST" }).catch(console.error);
+    }
+  }
+
   renderChatList();
   updateNavBadge();
 
@@ -1172,7 +1196,7 @@ async function openChatWith(idEncoded, nameEncoded, mssvEncoded = "", avatarUrlE
     </div>
     <div class="chat-messages" id="chatMsgs"></div>
     <div class="chat-input-row">
-      <input id="chatInput" placeholder="Nhập tin nhắn..." value="${escapeHtml(chat.draft || '')}" oninput="if(currentChatUser) { currentChatUser.draft = this.value; renderChatList(); }" />
+      <input id="chatInput" placeholder="Nhập tin nhắn..." value="${escapeHtml(chat.draft || '')}" oninput="if(currentChatUser) { currentChatUser.draft = this.value; localStorage.setItem('chatDraft_' + currentChatUser.id, this.value); renderChatList(); }" />
       <button class="btn-full" id="chatSendBtn" style="width:auto;padding:10px 20px;border-radius:999px" onclick="sendMsg()">
         <i class="fa-solid fa-paper-plane" style="font-size:0.85rem"></i>
       </button>
@@ -1210,14 +1234,16 @@ function renderChatMessages() {
   const box = qs("chatMsgs");
   if (!box || !currentChatUser) return;
 
-  box.innerHTML = currentChatUser.messages.length
-    ? currentChatUser.messages
-        .map(
-          (msg) =>
-            `<div class="msg-bubble ${msg.mine ? "msg-mine" : "msg-other"}">${escapeHtml(msg.text)}<div class="msg-time">${escapeHtml(msg.time)}</div></div>`
-        )
-        .join("")
-    : `<div class="empty-state"><div class="detail-name">Chưa có tin nhắn</div><div class="verify-banner-text">Hãy bắt đầu cuộc trò chuyện đầu tiên.</div></div>`;
+  let html = "";
+  if (!currentChatUser.messages.length) {
+    html = `<div class="empty-state"><div class="detail-name">Chưa có tin nhắn</div><div class="verify-banner-text">Hãy bắt đầu cuộc trò chuyện đầu tiên.</div></div>`;
+  } else {
+    html = currentChatUser.messages.map((msg) => {
+      return `<div class="msg-bubble ${msg.mine ? "msg-mine" : "msg-other"}">${escapeHtml(msg.text)}<div class="msg-time">${escapeHtml(msg.time)}</div></div>`;
+    }).join("");
+  }
+
+  box.innerHTML = html;
 
   box.scrollTop = box.scrollHeight;
 }
