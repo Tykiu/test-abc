@@ -176,6 +176,12 @@ class StudyBuddyApplication:
                 request_id, current_user
             )
 
+        @app.delete("/api/requests/{request_id}/members/{user_id}", summary="Xoa thanh vien khoi yeu cau")
+        async def remove_member(request_id: int, user_id: str, current_user: Any = current_user_dep):
+            return await self.study_request_service.remove_member(
+                request_id, user_id, current_user
+            )
+
         @app.get("/", summary="Health check")
         async def root():
             return await self.utility_service.root()

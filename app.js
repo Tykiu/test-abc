@@ -1779,10 +1779,17 @@ const historyManager = {
           uniqueParticipants.forEach(p => {
               const isP_Creator = p.id === item.user_id;
               const avatarUrl = p.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(p.full_name || 'U')}`;
+
+              let removeBtnHtml = '';
+              if (isCreator && !isP_Creator) {
+                  removeBtnHtml = `<button onclick="historyManager.removeMember(${item.id}, '${p.id}')" style="background:transparent; border:none; color:var(--danger); cursor:pointer; padding:0 0 0 4px; font-size:0.85rem;" title="Xóa khỏi nhóm"><i class="fa-solid fa-xmark"></i></button>`;
+              }
+
               membersHtml += `
                   <div class="history-member-item" title="${escapeHtml(p.full_name)} (${isP_Creator ? 'Người tạo' : 'Thành viên'})" style="display:flex; align-items:center; gap: 6px; background: var(--bg); padding: 4px 8px; border-radius: 99px; font-size: 0.8rem;">
                       <img src="${avatarUrl}" alt="${escapeHtml(p.full_name)}" style="width:20px; height:20px; border-radius:50%;">
                       <span style="color: var(--text);">${escapeHtml(p.full_name.split(' ').pop())} ${isP_Creator ? '👑' : ''}</span>
+                      ${removeBtnHtml}
                   </div>
               `;
           });
@@ -1805,7 +1812,7 @@ const historyManager = {
                 </span>
               </div>
               <div style="display:flex; gap:8px;">
-                ${!isCreator ? `<button class="btn btn-sm" style="border:1px solid var(--border); background:var(--surface); cursor:pointer;" onclick="openChatWith('${encodeURIComponent(item.user_id)}', '${encodeURIComponent(item.profiles.full_name)}', '${encodeURIComponent(item.profiles.mssv || '')}', '${encodeURIComponent(item.profiles.avatar_url || '')}'); closeModal('historyModal');"><i class="fa-solid fa-comment"></i> Chat</button>` : ''}
+                ${!isCreator ? `<button class="btn btn-sm" style="border:1px solid var(--border); background:var(--surface); cursor:pointer;" onclick="closeModal('historyModal'); startChatWith('${encodeInline(item.user_id)}', '${encodeInline(item.profiles.full_name)}', '${encodeInline(item.profiles.mssv || '')}', '${encodeInline(item.profiles.avatar_url || '')}');"><i class="fa-solid fa-comment"></i> Chat</button>` : ''}
                 ${actionsHtml}
               </div>
             </div>
@@ -1918,6 +1925,18 @@ const historyManager = {
       showToast("Đã xóa yêu cầu thành công", "success");
     } catch (error) {
       showToast(error.message || "Không thể xóa yêu cầu", "error");
+    }
+  },
+
+  removeMember: async function(requestId, memberId) {
+    if (!confirm("Bạn có chắc chắn muốn xóa thành viên này khỏi nhóm?")) return;
+    try {
+      await apiFetch(`/api/requests/${requestId}/members/${memberId}`, { method: "DELETE" });
+      await this.openHistory();
+      await loadCards();
+      showToast("Đã xóa thành viên thành công", "success");
+    } catch (error) {
+      showToast(error.message || "Không thể xóa thành viên", "error");
     }
   },
 
