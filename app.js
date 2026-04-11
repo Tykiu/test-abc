@@ -1643,5 +1643,113 @@ async function init() {
   }
 }
 
+const historyManager = {
+  openHistory: async function() {
+    if (!currentUser) {
+      showToast("Vui lòng đăng nhập để xem lịch sử", "error");
+      return;
+    }
+    openModal('historyModal');
+    const container = qs("historyList");
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">Đang tải dữ liệu...</div>';
+    
+    try {
+      const res = await apiFetch("/api/requests/history");
+      if (res && res.success) {
+        this.renderHistory(res.data);
+      } else {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">Không thể tải lịch sử</div>';
+      }
+    } catch (e) {
+      console.error(e);
+      container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">Lỗi khi tải lịch sử</div>';
+    }
+  },
+
+  renderHistory: function(data) {
+    const container = qs("historyList");
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">Bạn chưa tham gia lớp học nào</div>';
+      return;
+    }
+    
+    let html = '<div class="request-grid" style="display: flex; flex-direction: column; gap: 15px;">';
+    data.forEach(item => {
+      const isCreator = item.user_id === currentUser?.id;
+      const roleText = isCreator ? '<span style="color:var(--primary);font-size:0.85rem;font-weight:bold;margin-left:8px;">(Người tạo)</span>' : '<span style="color:var(--success);font-size:0.85rem;font-weight:bold;margin-left:8px;">(Thành viên)</span>';
+      
+      const timeStr = new Date(item.created_at || Date.now()).toLocaleString("vi-VN", {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute:'2-digit'
+      });
+      
+      const statusColor = item.status === 'open' ? 'var(--success)' : 'var(--text-muted)';
+      const statusText = item.status === 'open' ? 'Đang mở' : 'Đã đóng';
+      
+      const typeBadge = item.type === "study" 
+        ? '<span class="badge" style="background:#e3f2fd;color:#1976d2">Học nhóm</span>'
+        : '<span class="badge" style="background:#fce4ec;color:#1565c0">Gia sư</span>';
+
+      let noteHtml = '';
+      if (item.note) {
+        noteHtml = `<div style="font-size:0.9rem; color:var(--text); background: var(--bg); padding: 8px; border-radius: 6px; margin-top: 10px;"><i class="fa-solid fa-note-sticky" style="color:var(--text-muted); margin-right:5px;"></i> ${escapeHtml(item.note)}</div>`;
+      }
+      
+      let linkHtml = '';
+      if (item.location_or_link) {
+        linkHtml = `<div style="font-size:0.9rem; margin-bottom:8px; display:flex; align-items:center; gap:8px;"><i class="fa-solid ${item.method === "online" ? "fa-link" : "fa-map-pin"}" style="color:var(--text-muted); width: 14px;"></i> <a href="${item.method === "online" ? escapeHtml(item.location_or_link) : '#'}" target="_blank" style="color:var(--primary); text-decoration:none; word-break: break-all;">${item.method === "online" ? 'Link buổi học' : escapeHtml(item.location_or_link)}</a></div>`;
+      }
+
+      let profileHtml = '';
+      if (item.profiles) {
+        profileHtml = `
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="${item.profiles.avatar_url || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(item.profiles.full_name || 'U')}" style="width: 24px; height: 24px; border-radius: 50%;">
+                <span style="font-size: 0.85rem; color: var(--text-muted);">
+                  Người đăng: <strong>${escapeHtml(item.profiles.full_name)}</strong>
+                  ${item.profiles.is_verified ? '<i class="fa-solid fa-circle-check" style="color:var(--primary);" title="Đã xác thực"></i>' : ''}
+                </span>
+              </div>
+              ${!isCreator ? `<button class="btn btn-sm" style="border:1px solid var(--border); background:var(--surface); cursor:pointer;" onclick="openChatWith('${encodeURIComponent(item.user_id)}', '${encodeURIComponent(item.profiles.full_name)}', '${encodeURIComponent(item.profiles.mssv || '')}', '${encodeURIComponent(item.profiles.avatar_url || '')}'); closeModal('historyModal');"><i class="fa-solid fa-comment"></i> Chat</button>` : ''}
+            </div>
+        `;
+      }
+
+      html += `
+        <div class="request-card" style="cursor:default; padding: 15px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 10px;">
+            <div>
+              <h4 style="margin:0 0 5px 0; color:var(--text); display:flex; align-items:center;">
+                ${escapeHtml(item.subject || "Không rõ")} ${roleText}
+              </h4>
+              <div style="font-size:0.85rem; color:var(--text-muted);">Đăng lúc: ${timeStr}</div>
+            </div>
+            <div style="display:flex; gap: 8px; align-items:center;">
+              ${typeBadge}
+              <span style="font-size:0.85rem; color:${statusColor}; font-weight:600;">${statusText}</span>
+            </div>
+          </div>
+          
+          <div class="request-meta" style="display:flex; gap:15px; margin-bottom: 10px; font-size:0.9rem;">
+            <span title="Hình thức"><i class="fa-solid ${item.method === "online" ? "fa-video" : "fa-location-dot"}"></i> ${item.method === "online" ? "Online" : "Offline"}</span>
+            <span title="Thời gian học"><i class="fa-solid fa-clock"></i> ${escapeHtml(item.time || "Thoả thuận")}</span>
+            <span title="Số lượng"><i class="fa-solid fa-users"></i> ${item.current_slots || 0}/${item.slots || 0}</span>
+          </div>
+          
+          ${linkHtml}
+          ${noteHtml}
+          ${profileHtml}
+        </div>
+      `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+};
+
+window.historyManager = historyManager;
+
 // Gọi hàm khởi động
 init();

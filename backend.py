@@ -99,6 +99,10 @@ class StudyBuddyApplication:
         async def confirm_otp(body: OtpConfirmRequest, current_user: Any = current_user_dep):
             return await self.verification_service.confirm_otp(body, current_user)
 
+        @app.get("/api/requests/history", summary="Lay lich su tham gia")
+        async def get_history(current_user: Any = current_user_dep):
+            return await self.study_request_service.get_history(current_user)
+
         @app.get("/api/requests", summary="Lay danh sach yeu cau")
         async def get_requests(
             type: Optional[str] = None,
