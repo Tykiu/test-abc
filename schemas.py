@@ -154,6 +154,35 @@ class StudyRequestPost(BaseModel):
         return value
 
 
+class UpdateStudyRequest(BaseModel):
+    subject: Optional[str] = None
+    method: Optional[str] = None
+    location_or_link: Optional[str] = None
+    time: Optional[str] = None
+    slots: Optional[int] = None
+    note: Optional[str] = None
+    tutor_role: Optional[str] = None
+    status: Optional[str] = None
+
+    @validator("method")
+    def validate_method(cls, value):
+        if value is not None and value not in ("online", "offline"):
+            raise ValueError("method phải là 'online' hoặc 'offline'")
+        return value
+
+    @validator("slots")
+    def validate_slots(cls, value):
+        if value is not None and (value < 2 or value > 50):
+            raise ValueError("Số lượng người từ 2 đến 50")
+        return value
+
+    @validator("status")
+    def validate_status(cls, value):
+        if value is not None and value not in ("open", "closed"):
+            raise ValueError("Trạng thái phải là 'open' hoặc 'closed'")
+        return value
+
+
 class UpdateProfileRequest(BaseModel):
     full_name: Optional[str] = None
     bio: Optional[str] = None

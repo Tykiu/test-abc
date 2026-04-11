@@ -13,6 +13,7 @@ from schemas import (
     RegisterRequest,
     StudyRequestPost,
     UpdatePasswordRequest,
+    UpdateStudyRequest,
     UpdateProfileRequest,
     VerifyResetOtpRequest,
 )
@@ -99,7 +100,7 @@ class StudyBuddyApplication:
         async def confirm_otp(body: OtpConfirmRequest, current_user: Any = current_user_dep):
             return await self.verification_service.confirm_otp(body, current_user)
 
-        @app.get("/api/requests/history", summary="Lay lich su tham gia")
+        @app.get("/api/requests/history", summary="Lay lich su buoi hoc")
         async def get_history(current_user: Any = current_user_dep):
             return await self.study_request_service.get_history(current_user)
 
@@ -127,6 +128,14 @@ class StudyBuddyApplication:
         async def create_request(body: StudyRequestPost, current_user: Any = current_user_dep):
             return await self.study_request_service.create_request(body, current_user)
 
+        @app.patch("/api/requests/{request_id}", summary="Chinh sua yeu cau")
+        async def update_request(
+            request_id: int, body: UpdateStudyRequest, current_user: Any = current_user_dep
+        ):
+            return await self.study_request_service.update_request(
+                request_id, body, current_user
+            )
+
         @app.post("/api/requests/{request_id}/join", summary="Tham gia yeu cau")
         async def join_request(request_id: int, current_user: Any = current_user_dep):
             return await self.study_request_service.join_request(request_id, current_user)
@@ -135,7 +144,6 @@ class StudyBuddyApplication:
         async def get_my_profile(current_user: Any = current_user_dep):
             return await self.profile_service.get_my_profile(current_user)
 
-        @app.patch("/api/profile/me", summary="Cap nhat profile")
         async def update_my_profile(
             
             body: UpdateProfileRequest, current_user: Any = current_user_dep
@@ -157,6 +165,16 @@ class StudyBuddyApplication:
         @app.post("/api/messages", summary="Gửi tin nhắn")
         async def send_message(body: MessageRequest, current_user: Any = current_user_dep):
             return await self.message_service.send_message(body, current_user)
+
+        @app.post("/api/messages/{other_user_id}/read", summary="Đánh dấu đã đọc")
+        async def mark_messages_as_read(other_user_id: str, current_user: Any = current_user_dep):
+            return await self.message_service.mark_as_read(other_user_id, current_user)
+
+        @app.delete("/api/requests/{request_id}/join", summary="Roi khoi yeu cau")
+        async def leave_request(request_id: int, current_user: Any = current_user_dep):
+            return await self.study_request_service.leave_request(
+                request_id, current_user
+            )
 
         @app.get("/", summary="Health check")
         async def root():
