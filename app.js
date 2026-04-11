@@ -1057,12 +1057,8 @@ async function loadConversations() {
     });
     chatCache = newData;
     chatCache.sort((a, b) => {
-      const aUnread = a.unreadCount > 0 ? 1 : 0;
-      const bUnread = b.unreadCount > 0 ? 1 : 0;
-      if (aUnread !== bUnread) return bUnread - aUnread; // Đưa chat chưa đọc lên trước
       const timeA = a.lastTime ? new Date(a.lastTime).getTime() : 0;
       const timeB = b.lastTime ? new Date(b.lastTime).getTime() : 0;
-      return timeB - timeA; // Sau đó mới sắp xếp theo thời gian mới nhất
       return timeB - timeA; 
     });
     renderChatList();
@@ -1085,9 +1081,10 @@ function upsertChat(chat) {
     loaded: !!chat.loaded,
     draft: chat.draft || "",
   };
-
-  const index = chatCache.findIndex((item) => item.id === normalized.id);
+  const id = String(chat.id || "");
+  let index = chatCache.findIndex((item) => item.id === id);
   if (index >= 0) {
+    const existing = chatCache[index];
     chatCache[index] = {
       ...chatCache[index],
       ...normalized,
@@ -1095,21 +1092,41 @@ function upsertChat(chat) {
       messages: normalized.messages.length ? normalized.messages : chatCache[index].messages,
       draft: normalized.draft || chatCache[index].draft || "",
       unreadCount: normalized.unreadCount !== undefined ? normalized.unreadCount : chatCache[index].unreadCount,
+      ...existing,
+      name: chat.name !== undefined ? chat.name : existing.name,
+      mssv: chat.mssv !== undefined ? chat.mssv : existing.mssv,
+      avatarUrl: chat.avatarUrl || existing.avatarUrl || "",
+      last: chat.last !== undefined ? chat.last : existing.last,
+      lastTime: chat.lastTime !== undefined ? chat.lastTime : existing.lastTime,
+      unreadCount: chat.unreadCount !== undefined ? chat.unreadCount : existing.unreadCount,
+      messages: (chat.messages && chat.messages.length) ? chat.messages : existing.messages,
+      loaded: chat.loaded !== undefined ? chat.loaded : existing.loaded,
+      draft: chat.draft !== undefined ? chat.draft : existing.draft,
     };
   } else {
     chatCache.unshift(normalized);
+    chatCache.unshift({
+      id,
+      name: chat.name || "Người dùng",
+      mssv: chat.mssv || "",
+      avatarUrl: chat.avatarUrl || "",
+      last: chat.last || "",
+      lastTime: chat.lastTime || "",
+      unreadCount: chat.unreadCount || 0,
+      messages: Array.isArray(chat.messages) ? chat.messages : [],
+      loaded: !!chat.loaded,
+      draft: chat.draft || "",
+    });
   }
 
   chatCache.sort((a, b) => {
-    const aUnread = a.unreadCount > 0 ? 1 : 0;
-    const bUnread = b.unreadCount > 0 ? 1 : 0;
-    if (aUnread !== bUnread) return bUnread - aUnread; // Đưa chat chưa đọc lên trước
     const timeA = a.lastTime ? new Date(a.lastTime).getTime() : 0;
     const timeB = b.lastTime ? new Date(b.lastTime).getTime() : 0;
     return timeB - timeA;
   });
 
   return chatCache.find((item) => item.id === normalized.id);
+  return chatCache.find((item) => item.id === id);
 }
 
 async function loadMessagesForChat(chat) {
