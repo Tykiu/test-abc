@@ -136,6 +136,12 @@ class StudyBuddyApplication:
                 request_id, body, current_user
             )
 
+        @app.delete("/api/requests/{request_id}", summary="Xoa yeu cau")
+        async def delete_request(
+            request_id: int, current_user: Any = current_user_dep
+        ):
+            return await self.study_request_service.delete_request(request_id, current_user)
+
         @app.post("/api/requests/{request_id}/join", summary="Tham gia yeu cau")
         async def join_request(request_id: int, current_user: Any = current_user_dep):
             return await self.study_request_service.join_request(request_id, current_user)
