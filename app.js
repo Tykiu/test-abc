@@ -1,3 +1,28 @@
+function applyTheme(theme) {
+  const nextTheme = theme === "dark" ? "dark" : "light";
+  document.body.dataset.theme = nextTheme;
+  localStorage.setItem("sb_theme", nextTheme);
+
+  const icon = qs("themeToggleIcon");
+  const button = qs("themeToggleBtn");
+  if (icon) icon.className = nextTheme === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+  if (button) {
+    const label = nextTheme === "dark" ? "Chuyen sang che do sang" : "Chuyen sang che do toi";
+    button.title = label;
+    button.setAttribute("aria-label", label);
+  }
+}
+
+function toggleTheme() {
+  applyTheme(document.body.dataset.theme === "dark" ? "light" : "dark");
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem("sb_theme");
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  applyTheme(savedTheme || (prefersDark ? "dark" : "light"));
+}
+
 class ApiClient {
   constructor() {
     const defaultApi = "https://uit-test.onrender.com";
@@ -171,7 +196,7 @@ let currentUser = null;
 let currentProfile = null;
 let currentMode = "study";
 let allCards = [];
-let activeFilters = { year: "", subject: "", method: "", is_verified: "" };
+let activeFilters = { year: "", subject: "", method: "", tutor_role: "" };
 let currentChatUser = null;
 let chatCache = [];
 let resetRecoveryActive = false;
@@ -358,7 +383,7 @@ function setFilter(key, value, dropdownId) {
 }
 
 function clearFilters() {
-  activeFilters = { year: "", subject: "", method: "", is_verified: "" };
+  activeFilters = { year: "", subject: "", method: "", tutor_role: "" };
   if (qs("clearFilter")) qs("clearFilter").style.display = "none";
   if (qs("searchInput")) qs("searchInput").value = "";
   renderCards();
@@ -483,10 +508,8 @@ function getFilteredCards() {
     cards = cards.filter((card) => card.method === activeFilters.method);
   }
 
-  if (activeFilters.verified === "true" || activeFilters.is_verified === "true" || activeFilters.is_verified === true) {
-    cards = cards.filter((card) => (card.profiles?.is_verified === true || card.is_verified === true));
-  } else if (activeFilters.verified === "false" || activeFilters.is_verified === "false" || activeFilters.is_verified === false) {
-    cards = cards.filter((card) => (card.profiles?.is_verified === false || card.is_verified === false));
+  if (activeFilters.tutor_role && activeFilters.tutor_role !== "") {
+    cards = cards.filter((card) => card.type === "tutor" && card.tutor_role === activeFilters.tutor_role);
   }
 
   if (activeFilters.year && activeFilters.year !== "") {
@@ -578,7 +601,7 @@ function renderCards() {
   qs("cardsGrid").innerHTML = cards.length ? cards.map(buildCard).join("") : emptyHtml;
   qs("modeTitle").textContent =
     currentMode === "study"
-      ? "Study Buddy - Học nhóm cùng tiến"
+      ? "Study Buddy - Học nhóm hăng say, điểm 10 trao tay"
       : "Tutor - Kết nối gia sư nội bộ";
   qs("cardCount").textContent = `${cards.length} bài đăng`;
 }
@@ -1967,4 +1990,5 @@ const historyManager = {
 window.historyManager = historyManager;
 
 // Gọi hàm khởi động
+initTheme();
 init();
