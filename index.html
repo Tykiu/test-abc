@@ -38,6 +38,9 @@
       </button>
     </div>
     <div class="nav-right">
+      <button class="nav-icon-btn theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Chuyen che do sang/toi" aria-label="Chuyen che do sang/toi">
+        <i class="fa-solid fa-moon" id="themeToggleIcon"></i>
+      </button>
       <button class="nav-icon-btn" onclick="openChat()" title="Tin nhắn">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
@@ -119,12 +122,12 @@
             </div>
           </div>
           <div class="chip-wrap">
-            <button class="chip" onclick="toggleChipDrop('dropVerify')"><i class="fa-solid fa-circle-check"
-                style="font-size:inherit;margin-right:6px;"></i>Xác thực <span>▾</span></button>
-            <div class="chip-dropdown" id="dropVerify">
-                <div class="chip-option" onclick="setFilter('is_verified', true, 'dropVerify')">Đã xác thực</div>
-                <div class="chip-option" onclick="setFilter('is_verified', false, 'dropVerify')">Chưa xác thực</div>
-                <div class="chip-option" onclick="setFilter('is_verified','','dropVerify')">Tất cả</div>
+            <button class="chip" onclick="toggleChipDrop('dropTutorRole')"><i class="fa-solid fa-user-graduate"
+                style="font-size:inherit;margin-right:6px;"></i>Vai trò <span>▾</span></button>
+            <div class="chip-dropdown" id="dropTutorRole">
+                <div class="chip-option" onclick="setFilter('tutor_role','offering','dropTutorRole')">Gia sư</div>
+                <div class="chip-option" onclick="setFilter('tutor_role','seeking','dropTutorRole')">Học viên</div>
+                <div class="chip-option" onclick="setFilter('tutor_role','','dropTutorRole')">Tất cả</div>
             </div>
           </div>
           <button class="chip" id="clearFilter" onclick="clearFilters()" style="display:none">✕ Xóa bộ lọc</button>
@@ -134,7 +137,7 @@
     <!-- CARDS -->
     <div class="cards-section">
       <div class="section-header">
-        <div class="section-title" id="modeTitle">👥 Study Buddy — Học nhóm cùng tiến</div>
+        <div class="section-title" id="modeTitle">👥 Study Buddy — Học nhóm hăng say, điểm 10 trao tay</div>
         <div class="section-count" id="cardCount">0 bài đăng</div>
       </div>
       <div class="cards-grid" id="cardsGrid"></div>
