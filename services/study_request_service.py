@@ -42,6 +42,8 @@ class StudyRequestService:
 
             response = query.range(offset, offset + limit - 1).execute()
             data = response.data or []
+            print(f"DEBUG: get_requests found {len(data)} items")
+            
             if verified_only:
                 data = [item for item in data if item.get("profiles", {}).get("is_verified")]
             return {"data": data, "count": len(data)}
@@ -80,9 +82,19 @@ class StudyRequestService:
                 "status": "open",
                 "tutor_role": body.tutor_role,
             }
+            if body.content: payload["content"] = body.content
+            if body.drive_link: payload["drive_link"] = body.drive_link
+            if body.session_date: payload["session_date"] = body.session_date
+            if body.session_start: payload["session_start"] = body.session_start
+            if body.session_end: payload["session_end"] = body.session_end
+            if body.session_start_datetime: payload["session_start_datetime"] = body.session_start_datetime
+            
             response = self.supabase.admin.table("study_requests").insert(payload).execute()
+            if response.data:
+                print(f"DEBUG: Created request with ID: {response.data[0].get('id')}")
             return {"success": True, "data": response.data[0] if response.data else None}
         except Exception as exc:
+            print("ERROR IN CREATE_REQUEST:", str(exc))
             raise HTTPException(status_code=500, detail=str(exc))
 
     async def update_request(
@@ -110,11 +122,17 @@ class StudyRequestService:
             if not update_data:
                 raise HTTPException(status_code=400, detail="Không có thông tin để cập nhật")
 
+            # Xóa hoặc chuyển giá trị rỗng thành None cho các trường thời gian
+            for time_field in ["session_end", "session_start", "session_date", "session_start_datetime"]:
+                if time_field in update_data and update_data[time_field] == "":
+                    update_data[time_field] = None
+
             response = self.supabase.admin.table("study_requests").update(update_data).eq("id", request_id).execute()
             return {"success": True, "data": response.data[0] if response.data else None}
         except HTTPException:
             raise
         except Exception as exc:
+            print("ERROR IN UPDATE_REQUEST:", str(exc))
             raise HTTPException(status_code=500, detail=str(exc))
 
     async def delete_request(self, request_id: int, current_user: Any):
@@ -324,6 +342,7 @@ class StudyRequestService:
                     req_data["members"] = [m for m in members_by_req_id.get(req_id, []) if m.get("id") != creator_id]
 
             sorted_reqs = sorted(all_reqs_dict.values(), key=lambda x: x.get("created_at", ""), reverse=True)
+            print(f"DEBUG: get_history returning {len(sorted_reqs)} items")
 
             return {"success": True, "data": sorted_reqs}
         except Exception as exc:
