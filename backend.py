@@ -149,7 +149,8 @@ class StudyBuddyApplication:
         @app.get("/api/profile/me", summary="Lay profile cua minh")
         async def get_my_profile(current_user: Any = current_user_dep):
             return await self.profile_service.get_my_profile(current_user)
-
+        
+        @app.patch("/api/profile/me", summary="Cap nhat profile cua minh")
         async def update_my_profile(
             
             body: UpdateProfileRequest, current_user: Any = current_user_dep

@@ -128,11 +128,18 @@ class OtpConfirmRequest(BaseModel):
 class StudyRequestPost(BaseModel):
     type: str
     subject: str
+    subject_code: Optional[str] = None
     method: str
     location_or_link: str
     time: str
+    session_date: Optional[str] = None        # DD/MM/YYYY
+    session_start: Optional[str] = None       # HH:MM
+    session_end: Optional[str] = None         # HH:MM
+    session_start_datetime: Optional[str] = None  # ISO datetime for auto-cleanup
     slots: int
     note: Optional[str] = None
+    content: Optional[str] = None            # Nội dung buổi học
+    drive_link: Optional[str] = None         # Link tài liệu Drive
     tutor_role: Optional[str] = None
 
     @validator("type")
@@ -156,11 +163,18 @@ class StudyRequestPost(BaseModel):
 
 class UpdateStudyRequest(BaseModel):
     subject: Optional[str] = None
+    subject_code: Optional[str] = None
     method: Optional[str] = None
     location_or_link: Optional[str] = None
     time: Optional[str] = None
+    session_date: Optional[str] = None
+    session_start: Optional[str] = None
+    session_end: Optional[str] = None
+    session_start_datetime: Optional[str] = None
     slots: Optional[int] = None
     note: Optional[str] = None
+    content: Optional[str] = None
+    drive_link: Optional[str] = None
     tutor_role: Optional[str] = None
     status: Optional[str] = None
 

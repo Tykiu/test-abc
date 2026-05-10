@@ -22,6 +22,31 @@
   --font-body: "Manrope", sans-serif;
 }
 
+body[data-theme="dark"] {
+  --bg: #0f1720;
+  --bg-card: #172331;
+  --text: #edf6fb;
+  --text-muted: #a9bdca;
+  --border: #2f4354;
+  --c1: #e8f4fa;
+  --c2: #73b5d2;
+  /* Giữ nguyên màu xanh sáng cho nút Active */
+  --c3: #8fd0ea;
+  --c4: #2a4157;
+  /* Chỉnh lại để làm nền hover cho nút chưa chọn */
+  --c5: #1c2c3e;
+  /* Dùng cho các thành phần cần độ sâu */
+  --success: #76d6ad;
+  --success-light: #14372b;
+  --warn: #f1c27a;
+  --warn-light: #382817;
+  --warn-border: #6b4b24;
+  --danger: #ff8b8b;
+  --danger-light: #3a1d24;
+  --shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+  /* Tăng bóng đổ cho sâu hơn */
+}
+
 * {
   box-sizing: border-box;
 }
@@ -144,6 +169,8 @@ button:disabled {
   transition: 0.2s ease;
 }
 
+
+
 .mode-btn,
 .btn-ghost,
 .chip,
@@ -205,6 +232,29 @@ button:disabled {
   background: linear-gradient(135deg, var(--c2), var(--c3));
   color: #fff;
   border-color: transparent;
+}
+
+/* Trạng thái CHƯA CHỌN: Giống nút Đăng nhập */
+.mode-btn:not(.active) {
+  background: #fff;
+  /* Ở Light Mode là trắng */
+  border: 1px solid var(--border);
+  color: var(--c1);
+}
+
+/* Khi ở Dark Mode, nút chưa chọn sẽ tối đi để giống nút Đăng nhập của Dark Mode */
+body[data-theme="dark"] .mode-btn:not(.active) {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* Trạng thái ĐANG CHỌN: Giống nút Đăng ký */
+.mode-btn.active {
+  background: linear-gradient(135deg, var(--c2), var(--c3)) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .nav-register-btn {
@@ -322,7 +372,19 @@ button:disabled {
   line-height: 1.05;
 }
 
-.search-tagline span,
+.search-tagline span {
+  background: linear-gradient(135deg, var(--c2), var(--c3));
+  /* Dùng đúng màu của nút Tạo yêu cầu */
+  -webkit-background-clip: text;
+  /* Cắt nền theo hình chữ */
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* Làm rỗng màu chữ gốc để hiện nền gradient */
+  display: inline-block;
+  /* Đảm bảo hiệu ứng gradient hiển thị đầy đủ */
+  font-weight: 800;
+}
+
 .search-sub,
 .card-note,
 .detail-note,
@@ -367,7 +429,7 @@ button:disabled {
 .filter-chips {
   flex-wrap: wrap;
   margin-top: 18px;
-  position: relative;  
+  position: relative;
   z-index: 10;
 }
 
@@ -387,7 +449,7 @@ button:disabled {
   border-radius: 14px;
   box-shadow: var(--shadow);
   max-width: 90vw;
-  max-height: 260px;    
+  max-height: 260px;
   overflow-y: auto;
   z-index: 100;
 }
@@ -401,7 +463,7 @@ button:disabled {
 }
 
 .chip-dropdown::-webkit-scrollbar-thumb {
-  background: #d1d5db; 
+  background: #d1d5db;
   border-radius: 10px;
 }
 
@@ -424,10 +486,12 @@ button:disabled {
   grid-template-columns: repeat(3, 1fr);
   gap: 18px;
   margin-top: 24px;
-  align-items: start;
+  align-items: stretch;
+  grid-auto-rows: 1fr;
 }
 
 @media (max-width: 1000px) {
+
   #cardsGrid,
   .cards-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -435,6 +499,7 @@ button:disabled {
 }
 
 @media (max-width: 620px) {
+
   #cardsGrid,
   .cards-grid {
     grid-template-columns: 1fr;
@@ -443,7 +508,20 @@ button:disabled {
 
 .card {
   padding: 20px;
-  align-self: start;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-footer {
+  margin-top: auto;
+  padding-top: 14px;
 }
 
 
@@ -521,6 +599,25 @@ button:disabled {
   border-radius: 14px;
 }
 
+.card-note {
+  display: none;
+}
+
+.card-info-row {
+  font-size: 0.85rem;
+}
+
+.card-link-online {
+  color: var(--c3);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.card-link-online:hover {
+  color: var(--c2);
+}
+
 .card-note,
 .detail-note,
 .detail-info-item,
@@ -550,7 +647,7 @@ button:disabled {
   justify-content: center;
   padding: 24px;
   background: rgba(9, 26, 39, 0.45);
-  z-index: 9999; 
+  z-index: 9999;
 }
 
 .modal-overlay.open {
@@ -605,11 +702,30 @@ button:disabled {
   flex-shrink: 0;
 }
 
-.alert { display: none; }
-.alert.show { display: block; }
-.alert-error { background: var(--danger-light); color: var(--danger); }
-.alert-success { background: var(--success-light); color: var(--success); }
-.alert-warn { background: var(--warn-light); border: 1px solid var(--warn-border); color: var(--warn); border-radius: 12px; }
+.alert {
+  display: none;
+}
+
+.alert.show {
+  display: block;
+}
+
+.alert-error {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.alert-success {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.alert-warn {
+  background: var(--warn-light);
+  border: 1px solid var(--warn-border);
+  color: var(--warn);
+  border-radius: 12px;
+}
 
 /* ===== LINK BUTTON ===== */
 .link-btn {
@@ -721,8 +837,13 @@ button:disabled {
   font-weight: 600;
 }
 
-.toast.success { background: var(--success); }
-.toast.error { background: var(--danger); }
+.toast.success {
+  background: var(--success);
+}
+
+.toast.error {
+  background: var(--danger);
+}
 
 /* ===== ACCOUNT PAGE ===== */
 .account-page {
@@ -872,7 +993,7 @@ button:disabled {
   transition: background 0.15s, border-color 0.15s;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  box-shadow: 0 2px 8px rgba(18,52,77,0.04);
+  box-shadow: 0 2px 8px rgba(18, 52, 77, 0.04);
 }
 
 .chat-list .chat-item-card:hover {
@@ -881,7 +1002,7 @@ button:disabled {
 }
 
 .chat-list .chat-item-card.active {
-  background: linear-gradient(135deg, rgba(31,95,139,0.08), rgba(45,141,189,0.08));
+  background: linear-gradient(135deg, rgba(31, 95, 139, 0.08), rgba(45, 141, 189, 0.08));
   border-color: var(--c3);
 }
 
@@ -1024,6 +1145,7 @@ button:disabled {
 .chat-input-row input:focus {
   border-color: var(--c3);
   background: #fff;
+  color: #183b56; /* Đảm bảo chữ tối khi nền trắng ở cả 2 chế độ */
 }
 
 @media (max-width: 620px) {
@@ -1032,12 +1154,15 @@ button:disabled {
     height: auto;
     max-height: 38vh;
   }
+
   .chat-page.open {
     flex-direction: column;
   }
+
   .chat-main {
     height: 62vh;
   }
+
   .chat-input-row {
     padding: 12px 14px 20px;
   }
@@ -1071,9 +1196,21 @@ button:disabled {
     justify-content: space-between;
     padding: 16px 18px;
   }
-  .nav-logo { order: 1; }
-  .nav-right { order: 2; }
-  .nav-modes { order: 3; width: 100%; margin-top: 16px; justify-content: center; }
+
+  .nav-logo {
+    order: 1;
+  }
+
+  .nav-right {
+    order: 2;
+  }
+
+  .nav-modes {
+    order: 3;
+    width: 100%;
+    margin-top: 16px;
+    justify-content: center;
+  }
 
   .main-wrap {
     width: min(100% - 20px, 1200px);
@@ -1090,24 +1227,46 @@ button:disabled {
     flex-direction: column;
     width: 100%;
   }
+
   .search-bar {
     min-width: unset;
     width: 100%;
   }
+
   .btn-create {
     width: 100%;
     justify-content: center;
   }
-  
-  .nav-logo { font-size: 1.15rem; gap: 8px; }
-  .nav-logo svg { width: 28px; height: 28px; }
-  .nav-login-btn { padding: 8px 12px; font-size: 0.8rem; }
-  .nav-register-btn { padding: 8px 12px; font-size: 0.8rem; }
-  .mode-btn { padding: 8px 12px; font-size: 0.85rem; }
+
+  .nav-logo {
+    font-size: 1.15rem;
+    gap: 8px;
+  }
+
+  .nav-logo svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .nav-login-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .nav-register-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .mode-btn {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
 
   .modal-overlay {
     padding: 12px;
   }
+
   .modal {
     padding: 20px 16px;
   }
@@ -1123,17 +1282,18 @@ button:disabled {
   .btn-full {
     flex: 1;
   }
-  
+
   .toast-container {
     left: 16px;
     right: 16px;
     top: 16px;
   }
+
   .toast {
     text-align: center;
     justify-content: center;
   }
-  
+
   .account-wrap {
     padding: 20px 14px 40px;
   }
@@ -1165,6 +1325,7 @@ button:disabled {
   padding: 4px;
   border-radius: 50%;
 }
+
 .user-menu-wrap {
   position: relative;
 }
@@ -1228,7 +1389,8 @@ button:disabled {
 
 /* 1. Hiệu ứng Card "bay lên" và bóng đổ sâu (Elevation) */
 .card {
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Hiệu ứng nảy nhẹ */
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  /* Hiệu ứng nảy nhẹ */
   border: 1px solid rgba(0, 0, 0, 0.05);
   background: #ffffff;
   position: relative;
@@ -1236,9 +1398,9 @@ button:disabled {
 }
 
 .card:hover {
-  transform: translateY(-10px); 
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12); 
-  border-color: #5790AB; 
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  border-color: #5790AB;
 }
 
 /* 2. Nâng cấp Avatar Gradient */
@@ -1251,26 +1413,35 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #fff; 
+  border: 2px solid #fff;
 }
 
 .card-avatar-inner {
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* 3. Micro-interactions cho các Nút */
-.btn-full, .btn-create, .chip {
+.btn-full,
+.btn-create,
+.chip {
   transition: transform 0.1s ease, box-shadow 0.2s ease;
 }
 
-.btn-full:active, .btn-create:active, .chip:active {
-  transform: scale(0.95); 
+.btn-full:active,
+.btn-create:active,
+.chip:active {
+  transform: scale(0.95);
 }
 
 /* 4. Skeleton Loading */
 @keyframes shimmer {
-  0% { background-position: -468px 0; }
-  100% { background-position: 468px 0; }
+  0% {
+    background-position: -468px 0;
+  }
+
+  100% {
+    background-position: 468px 0;
+  }
 }
 
 .loading-skeleton {
@@ -1288,7 +1459,7 @@ button:disabled {
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.3px;
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* ===== FIX MODAL BUTTONS ===== */
@@ -1316,4 +1487,391 @@ button:disabled {
   position: relative;
   z-index: 10;
   pointer-events: all;
+}
+
+
+/* ===== THEME TOGGLE ===== */
+.theme-toggle-btn {
+  width: 42px;
+  height: 42px;
+  justify-content: center;
+  padding: 0;
+}
+
+body[data-theme="dark"] {
+  background:
+    radial-gradient(circle at top left, rgba(143, 208, 234, 0.16), transparent 28%),
+    linear-gradient(180deg, #0b1118 0%, #111b25 100%);
+}
+
+body[data-theme="dark"] .navbar {
+  background: rgba(15, 23, 32, 0.92);
+  border-bottom-color: rgba(47, 67, 84, 0.92);
+}
+
+body[data-theme="dark"] .mode-btn,
+body[data-theme="dark"] .btn-ghost,
+body[data-theme="dark"] .chip,
+body[data-theme="dark"] .nav-icon-btn,
+body[data-theme="dark"] .user-avatar-btn,
+body[data-theme="dark"] .nav-login-btn,
+body[data-theme="dark"] .btn-full.secondary,
+body[data-theme="dark"] .search-bar,
+body[data-theme="dark"] .chip-dropdown,
+body[data-theme="dark"] .dropdown-menu,
+body[data-theme="dark"] .chat-sidebar,
+body[data-theme="dark"] .chat-sidebar-header,
+body[data-theme="dark"] .chat-top,
+body[data-theme="dark"] .chat-input-row,
+body[data-theme="dark"] .msg-bubble.received,
+body[data-theme="dark"] .message-input,
+body[data-theme="dark"] .form-input,
+body[data-theme="dark"] .form-select,
+body[data-theme="dark"] .modal-body input,
+body[data-theme="dark"] .modal-body textarea,
+body[data-theme="dark"] .modal-body select {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+body[data-theme="dark"] .search-section,
+body[data-theme="dark"] .card,
+body[data-theme="dark"] .account-card,
+body[data-theme="dark"] .modal,
+body[data-theme="dark"] .chat-page,
+body[data-theme="dark"] .detail-panel,
+body[data-theme="dark"] .history-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+body[data-theme="dark"] input::placeholder,
+body[data-theme="dark"] textarea::placeholder {
+  color: #7f94a4;
+}
+
+body[data-theme="dark"] .badge,
+body[data-theme="dark"] .card-avatar {
+  border-color: var(--bg-card) !important;
+}
+
+/* Thêm vào cuối file */
+body[data-theme="dark"] .mode-btn:not(.active) {
+  background: var(--c5);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+body[data-theme="dark"] .mode-btn:not(.active):hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+/* ===== PROFILE PANEL (Discord-style) ===== */
+.profile-panel {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: min(33vw, 400px);
+  height: 100vh;
+  z-index: 8000;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  box-shadow: 4px 0 32px rgba(18, 52, 77, 0.18);
+  transform: translateX(-110%);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.profile-panel.open {
+  transform: translateX(0);
+}
+
+.profile-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 7999;
+  background: rgba(9, 26, 39, 0.38);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.32s;
+}
+
+.profile-panel-backdrop.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.profile-panel-header-bg {
+  height: 120px;
+  background: linear-gradient(135deg, var(--c2), var(--c3));
+  flex-shrink: 0;
+  position: relative;
+}
+
+.profile-panel-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.profile-panel-close:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.profile-panel-avatar-wrap {
+  position: absolute;
+  bottom: -36px;
+  left: 24px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 4px solid var(--bg-card);
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+}
+
+.profile-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 52px 24px 24px;
+}
+
+.profile-panel-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--c1);
+  line-height: 1.2;
+}
+
+.profile-panel-mssv {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.profile-panel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-top: 10px;
+}
+
+.profile-panel-badge.verified {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.profile-panel-badge.unverified {
+  background: var(--warn-light);
+  color: var(--warn);
+}
+
+.profile-panel-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+.profile-panel-section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.profile-panel-bio {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.profile-panel-chat-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--c2), var(--c3));
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.2s;
+}
+
+.profile-panel-chat-btn:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 700px) {
+  .profile-panel {
+    width: min(90vw, 360px);
+  }
+}
+
+/* ===== SUBJECT COMBOBOX (F6) ===== */
+.subject-combobox-wrap {
+  position: relative;
+}
+
+.subject-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  z-index: 200;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.subject-dropdown.open {
+  display: block;
+}
+
+.subject-dropdown-search {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: -8px; /* Bù trừ khoảng padding của container để dính sát mép trên */
+  background: var(--bg-card);
+  z-index: 10; /* Ép thanh tìm kiếm luôn nổi lên trên, các item cuộn sẽ chui xuống dưới */
+}
+
+.subject-dropdown-search input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.subject-option {
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  border-radius: 0;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subject-option:hover {
+  background: var(--c5);
+}
+
+.subject-option .subject-code {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--c3);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+  font-family: monospace;
+}
+
+/* ===== TIME PICKER (F7) ===== */
+.time-picker-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+/* ===== SORT CHIP (F8) ===== */
+.chip-active {
+  background: linear-gradient(135deg, var(--c2), var(--c3)) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+/* ===== GUEST WALL ===== */
+.guest-wall {
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid rgba(216, 225, 234, 0.8);
+}
+
+.guest-wall-icon {
+  font-size: 3.5rem;
+  margin-bottom: 16px;
+}
+
+.guest-wall-title {
+  font-family: var(--font-head);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--c1);
+  margin-bottom: 8px;
+}
+
+.guest-wall-sub {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+/* ===== SESSION TIME DISPLAY ON CARD ===== */
+.card-session-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--c2);
+  background: var(--c5);
+  padding: 5px 10px;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.card-session-time.expired {
+  color: var(--danger);
+  background: var(--danger-light);
 }

@@ -8,13 +8,35 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="modern-dashboard.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="icon" type="image/png" href="favicon.png">
 </head>
 
 <body>
+
+  <!-- PROFILE PANEL (Discord-style) -->
+  <div class="profile-panel-backdrop" id="profilePanelBackdrop" onclick="closeProfilePanel()"></div>
+  <div class="profile-panel" id="profilePanel">
+    <div class="profile-panel-header-bg" id="profilePanelBg">
+      <button class="profile-panel-close" onclick="closeProfilePanel()">✕</button>
+      <div class="profile-panel-avatar-wrap" id="profilePanelAvatar">U</div>
+    </div>
+    <div class="profile-panel-body">
+      <div class="profile-panel-name" id="profilePanelName">—</div>
+      <div class="profile-panel-mssv" id="profilePanelMSSV">MSSV: —</div>
+      <div id="profilePanelBadge" class="profile-panel-badge"></div>
+      <div class="profile-panel-divider"></div>
+      <div class="profile-panel-section-title">Giới thiệu</div>
+      <div class="profile-panel-bio" id="profilePanelBio">Chưa có thông tin.</div>
+      <button class="profile-panel-chat-btn" id="profilePanelChatBtn" style="display:none">
+        <i class="fa-solid fa-comment"></i> Nhắn tin
+      </button>
+    </div>
+  </div>
 
   <!-- NAVBAR -->
   <nav class="navbar">
@@ -30,7 +52,10 @@
       <span class="nav-logo-text">UIT <span>Study Buddy</span></span>
     </a>
     <div class="nav-modes">
-      <button class="mode-btn active" id="modeStudy" onclick="switchMode('study')">
+      <button class="mode-btn active" id="modeDashboard" onclick="switchMode('dashboard')">
+        <i class="fa-solid fa-house"></i> Tổng quan
+      </button>
+      <button class="mode-btn" id="modeStudy" onclick="switchMode('study')">
         <i class="fa-solid fa-user-group"></i> Study Buddy
       </button>
       <button class="mode-btn" id="modeTutor" onclick="switchMode('tutor')">
@@ -38,6 +63,10 @@
       </button>
     </div>
     <div class="nav-right">
+      <button class="nav-icon-btn theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()"
+        title="Chuyen che do sang/toi" aria-label="Chuyen che do sang/toi">
+        <i class="fa-solid fa-moon" id="themeToggleIcon"></i>
+      </button>
       <button class="nav-icon-btn" onclick="openChat()" title="Tin nhắn">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
@@ -60,7 +89,8 @@
           <hr class="dropdown-divider" />
           <button class="dropdown-item" onclick="openAccount()"> <i class="fa-solid fa-user"></i>Tài khoản của
             tôi</button>
-          <button class="dropdown-item" onclick="historyManager.openHistory()"><i class="fa-solid fa-clock-rotate-left"></i>Lịch sử buổi học</button>
+          <button class="dropdown-item" onclick="historyManager.openHistory()"><i
+              class="fa-solid fa-clock-rotate-left"></i>Lịch sử buổi học</button>
           <button class="dropdown-item danger" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i>Đăng
             xuất</button>
           <hr class="dropdown-divider" />
@@ -73,71 +103,159 @@
 
   <!-- MAIN -->
   <div class="main-wrap" id="mainWrap">
-    <!-- SEARCH SECTION -->
-    <div class="search-section">
-      <div class="search-inner">
-        <div class="search-tagline">
-          Kết nối học tập <span>UIT</span>
-          <i class="fa-solid fa-graduation-cap" style="font-size: inherit;"></i>
-        </div>
-        <div class="search-sub">Tìm bạn học nhóm hoặc gia sư nội bộ trong trường</div>
-        <div class="search-bar-wrap">
-          <div class="search-bar">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
-            <input type="text" id="searchInput" placeholder="Tìm theo môn học, tên, MSSV..." oninput="filterCards()">
+    <!-- HOME VIEW -->
+    <div id="homeView" style="display:none;">
+      <!-- SEARCH SECTION -->
+      <div class="search-section">
+        <div class="search-inner">
+          <div class="search-tagline">
+            Kết nối học tập <span>UIT</span>
+            <i class="fa-solid fa-graduation-cap" style="font-size: inherit;"></i>
           </div>
-          <button class="btn-create" onclick="openPostModal()">+ Tạo yêu cầu</button>
-        </div>
-        <div class="filter-chips">
-          <div class="chip-wrap">
-            <button class="chip" onclick="toggleChipDrop('dropYear')"><i class="fa-solid fa-calendar"
-                style="font-size:inherit;margin-right:6px;"></i>Năm học <span>▾</span></button>
-            <div class="chip-dropdown" id="dropYear">
+          <div class="search-sub">Tìm bạn học nhóm hoặc gia sư nội bộ trong trường</div>
+          <div class="search-bar-wrap">
+            <div class="search-bar">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <input type="text" id="searchInput" placeholder="Tìm theo môn học, tên, MSSV..." oninput="filterCards()">
+            </div>
+            <button class="btn-create" onclick="openPostModal()">+ Tạo yêu cầu</button>
+          </div>
+          <div class="filter-chips">
+            <div class="chip-wrap">
+              <button class="chip" onclick="toggleChipDrop('dropYear')">Năm học <span>▾</span></button>
+              <div class="chip-dropdown" id="dropYear">
                 <div class="chip-option" onclick="setFilter('year','2025','dropYear')">Năm 2025 (K20)</div>
                 <div class="chip-option" onclick="setFilter('year','2024','dropYear')">Năm 2024 (K19)</div>
                 <div class="chip-option" onclick="setFilter('year','2023','dropYear')">Năm 2023 (K18)</div>
                 <div class="chip-option" onclick="setFilter('year','2022','dropYear')">Năm 2022 (K17)</div>
                 <div class="chip-option" onclick="setFilter('year','','dropYear')">Tất cả</div>
+              </div>
             </div>
-          </div>
-          <div class="chip-wrap">
-            <button class="chip" onclick="toggleChipDrop('dropSubject')"><i class="fa-solid fa-book"
-                style="font-size:inherit;margin-right:6px;"></i>Môn học <span>▾</span></button>
-            <div class="chip-dropdown" id="dropSubject">
+            <div class="chip-wrap">
+              <button class="chip" onclick="toggleChipDrop('dropSubject')">Môn học <span>▾</span></button>
+              <div class="chip-dropdown" id="dropSubject" style="min-width: 400px;">
+                <div class="subject-dropdown-search">
+                  <input type="text" placeholder="Tìm nhanh môn học..." oninput="filterSubjectDropdown(this.value)">
                 </div>
-          </div>
-          <div class="chip-wrap">
-            <button class="chip" onclick="toggleChipDrop('dropMethod')"><i class="fa-solid fa-globe"
-                style="font-size:inherit;margin-right:6px;"></i>Hình thức <span>▾</span></button>
-            <div class="chip-dropdown" id="dropMethod">
+                <div id="subjectFilterList"></div>
+              </div>
+            </div>
+            <div class="chip-wrap">
+              <button class="chip" onclick="toggleChipDrop('dropMethod')">Hình thức <span>▾</span></button>
+              <div class="chip-dropdown" id="dropMethod">
                 <div class="chip-option" onclick="setFilter('method','online','dropMethod')">Online</div>
                 <div class="chip-option" onclick="setFilter('method','offline','dropMethod')">Offline</div>
                 <div class="chip-option" onclick="setFilter('method','','dropMethod')">Tất cả</div>
+              </div>
             </div>
-          </div>
-          <div class="chip-wrap">
-            <button class="chip" onclick="toggleChipDrop('dropVerify')"><i class="fa-solid fa-circle-check"
-                style="font-size:inherit;margin-right:6px;"></i>Xác thực <span>▾</span></button>
-            <div class="chip-dropdown" id="dropVerify">
-                <div class="chip-option" onclick="setFilter('is_verified', true, 'dropVerify')">Đã xác thực</div>
-                <div class="chip-option" onclick="setFilter('is_verified', false, 'dropVerify')">Chưa xác thực</div>
-                <div class="chip-option" onclick="setFilter('is_verified','','dropVerify')">Tất cả</div>
+            <div class="chip-wrap" id="filterTutorRole">
+              <button class="chip" onclick="toggleChipDrop('dropTutorRole')">Vai trò <span>▾</span></button>
+              <div class="chip-dropdown" id="dropTutorRole">
+                <div class="chip-option" onclick="setFilter('tutor_role','offering','dropTutorRole')">Gia sư</div>
+                <div class="chip-option" onclick="setFilter('tutor_role','seeking','dropTutorRole')">Học viên</div>
+                <div class="chip-option" onclick="setFilter('tutor_role','','dropTutorRole')">Tất cả</div>
+              </div>
             </div>
+            <div class="chip-wrap">
+              <button class="chip" id="sortChip" onclick="toggleChipDrop('dropSort')">Sắp xếp <span>▾</span></button>
+              <div class="chip-dropdown" id="dropSort">
+                <div class="chip-option" onclick="setSort('newest','dropSort')">Mới nhất</div>
+                <div class="chip-option" onclick="setSort('oldest','dropSort')">Cũ nhất</div>
+              </div>
+            </div>
+            <button class="chip" id="clearFilter" onclick="clearFilters()" style="display:none">✕ Xóa bộ lọc</button>
           </div>
-          <button class="chip" id="clearFilter" onclick="clearFilters()" style="display:none">✕ Xóa bộ lọc</button>
         </div>
       </div>
-    </div>
-    <!-- CARDS -->
-    <div class="cards-section">
-      <div class="section-header">
-        <div class="section-title" id="modeTitle">👥 Study Buddy — Học nhóm cùng tiến</div>
-        <div class="section-count" id="cardCount">0 bài đăng</div>
+      <!-- CARDS -->
+      <div class="cards-section">
+        <div class="section-header">
+          <div class="section-title" id="modeTitle">👥 Study Buddy — Học nhóm hăng say, điểm 10 trao tay</div>
+          <div class="section-count" id="cardCount">0 bài đăng</div>
+        </div>
+        <div class="cards-grid" id="cardsGrid"></div>
       </div>
-      <div class="cards-grid" id="cardsGrid"></div>
+    </div> <!-- END HOME VIEW -->
+
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboardView" class="mdash-layout">
+      <!-- MAIN DASHBOARD COLUMN -->
+      <div class="mdash-main">
+
+        <!-- HEADER -->
+        <div class="mdash-header">
+          <h2 class="mdash-greeting" id="dashGreeting">Chào buổi sáng</h2>
+          <p class="mdash-subtitle" id="dashStatsUpcomingText">Bạn có 0 lịch hẹn sắp tới.</p>
+        </div>
+
+        <!-- STATS -->
+        <div class="mdash-grid" style="grid-template-columns: repeat(2, 1fr);">
+          <div class="mdash-card mdash-card-blue">
+            <i class="fa-solid fa-user-group mdash-card-bg-icon"></i>
+            <div>
+              <div class="mdash-card-title">Phiên học tham gia</div>
+              <div class="mdash-card-value" id="dashStatTotalJoined">0</div>
+              <div class="mdash-card-label" id="dashStatJoinedMonth">Tháng này: 0</div>
+            </div>
+          </div>
+
+          <div class="mdash-card mdash-card-green">
+            <i class="fa-solid fa-calendar-check mdash-card-bg-icon"></i>
+            <div>
+              <div class="mdash-card-title">Môn đã học tháng này</div>
+              <div class="mdash-card-value" id="dashStatMonthSubjects">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MY POSTS -->
+        <div class="mdash-list-container">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text);">Danh sách lớp học</h3>
+            <div class="chip-wrap">
+              <button class="chip" id="dashFilterBtn" onclick="toggleChipDrop('dropDashFilter')">Tất cả <span>▾</span></button>
+              <div class="chip-dropdown" id="dropDashFilter" style="right: 0; left: auto; top: calc(100% + 4px);">
+                <div class="chip-option" onclick="setDashFilter('all', 'Tất cả')">Tất cả</div>
+                <div class="chip-option" onclick="setDashFilter('created', 'Đã tạo')">Đã tạo</div>
+                <div class="chip-option" onclick="setDashFilter('joined', 'Đã tham gia')">Đã tham gia</div>
+              </div>
+            </div>
+          </div>
+          <div id="dashMyPosts" style="display: flex; flex-direction: column;"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDEBAR (CALENDAR/UPCOMING) -->
+      <div class="mdash-sidebar">
+        <div class="mdash-calendar-header">
+          <button onclick="changeCalendarMonth(-1)"
+            style="width: 32px; height: 32px; border-radius: 50%; border: none; background: transparent; cursor: pointer; float: left;"><i
+              class="fa-solid fa-arrow-left"></i></button>
+          <div class="mdash-calendar-month" id="calendarMonth" style="cursor:pointer" onclick="changeCalendarYear()">May 2024</div>
+          <button onclick="changeCalendarMonth(1)"
+            style="width: 32px; height: 32px; border-radius: 50%; border: none; background: transparent; cursor: pointer; float: right;"><i
+              class="fa-solid fa-arrow-right"></i></button>
+        </div>
+
+        <div class="mdash-calendar-grid" id="calendarGrid">
+          <!-- JS will render days here -->
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+          <div>
+            <h3 style="font-weight: 800; font-size: 1.5rem; color: var(--text);" id="calendarSelectedDate">--</h3>
+          </div>
+        </div>
+
+        <div class="mdash-timeline">
+          <div id="dashUpcoming" class="mdash-timeline-inner">
+            <!-- Upcoming items injected here -->
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -170,7 +288,7 @@
   <div class="modal-overlay" id="loginModal">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">🔐 Đăng nhập</div>
+        <div class="modal-title">Đăng nhập</div>
         <button class="modal-close" onclick="closeModal('loginModal')">✕</button>
       </div>
       <div class="modal-body">
@@ -199,13 +317,14 @@
   <div class="modal-overlay" id="forgotOtpModal">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">🔑 Nhập mã OTP</div>
+        <div class="modal-title">Nhập mã OTP</div>
         <button class="modal-close" onclick="closeModal('forgotOtpModal')">✕</button>
       </div>
       <div class="modal-body">
         <div class="alert alert-error" id="forgotOtpError"></div>
         <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:15px;line-height:1.5">
-          Chúng tôi đã gửi một mã OTP gồm 6 chữ số đến email <b id="forgotOtpEmailDisplay"></b>. Vui lòng kiểm tra hộp thư (cả mục Spam) và nhập mã vào bên dưới.
+          Chúng tôi đã gửi một mã OTP gồm 6 chữ số đến email <b id="forgotOtpEmailDisplay"></b>. Vui lòng kiểm tra hộp
+          thư (cả mục Spam) và nhập mã vào bên dưới.
         </p>
         <div class="form-group">
           <label class="form-label">Mã OTP (6 chữ số)</label>
@@ -220,7 +339,7 @@
   <div class="modal-overlay" id="registerModal">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">✨ Tạo tài khoản</div>
+        <div class="modal-title">Tạo tài khoản</div>
         <button class="modal-close" onclick="closeModal('registerModal')">✕</button>
       </div>
       <div class="modal-body">
@@ -265,7 +384,7 @@
   <div class="modal-overlay" id="postModal">
     <div class="modal modal-lg">
       <div class="modal-header">
-        <div class="modal-title" id="postModalTitle">📝 Tạo yêu cầu Study Buddy</div>
+        <div class="modal-title" id="postModalTitle">Tạo yêu cầu Study Buddy</div>
         <button class="modal-close" onclick="closeModal('postModal')">✕</button>
       </div>
       <div class="modal-body">
@@ -284,7 +403,12 @@
         </div>
         <div class="form-group">
           <label class="form-label">Môn học</label>
-          <input type="text" class="form-input" id="postSubject" placeholder="VD: Giải tích, Lập trình C++...">
+          <div class="subject-combobox-wrap" id="subjectComboboxWrap">
+            <input type="text" class="form-input" id="postSubject" placeholder="Tìm theo tên hoặc mã môn (IT001...)"
+              autocomplete="off" oninput="subjectCombobox.onInput(this.value)" onfocus="subjectCombobox.open()">
+            <div class="subject-dropdown" id="subjectDropdown"></div>
+          </div>
+          <input type="hidden" id="postSubjectCode">
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -308,8 +432,21 @@
           <input type="text" class="form-input" id="postLocation" placeholder="VD: Thư viện UIT tầng 3, phòng B202...">
         </div>
         <div class="form-group">
-          <label class="form-label">Thời gian dự kiến</label>
-          <input type="text" class="form-input" id="postTime" placeholder="VD: Thứ 5, 19:00 - 21:00">
+          <label class="form-label">Ngày và giờ buổi học</label>
+          <div class="time-picker-row">
+            <div>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Ngày (DD/MM/YYYY)</div>
+              <input type="text" id="postDate" placeholder="dd/mm/yyyy" maxlength="10" oninput="formatDateInput(this)">
+            </div>
+            <div>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Giờ bắt đầu</div>
+              <input type="time" class="form-input" id="postStartTime" step="300">
+            </div>
+            <div>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Giờ kết thúc</div>
+              <input type="time" class="form-input" id="postEndTime" step="300">
+            </div>
+          </div>
         </div>
         <div class="form-group" id="tutorRoleField" style="display:none">
           <label class="form-label">Vai trò</label>
@@ -317,6 +454,16 @@
             <option value="seeking">🙋 Tôi cần gia sư</option>
             <option value="offering">🎓 Tôi nhận dạy</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nội dung buổi học <span style="color:var(--danger);font-weight:700">*</span></label>
+          <input type="text" class="form-input" id="postContent"
+            placeholder="VD: Chương 3-5, ôn thi cuối kỳ, tổng hợp..." required>
+        </div>
+        <div class="form-group" id="driveLinkField">
+          <label class="form-label">Link tài liệu Drive <span style="color:var(--text-muted);font-weight:400">(tùy
+              chọn)</span></label>
+          <input type="url" class="form-input" id="postDriveLink" placeholder="https://drive.google.com/...">
         </div>
         <div class="form-group">
           <label class="form-label">Ghi chú</label>
@@ -355,9 +502,20 @@
         <!-- Bước 1: Gửi OTP (Đã được tự động hóa nên ẩn đi) -->
         <div id="otpStep1" style="display:none"></div>
 
+        <!-- Bước 1.5: Nhập email UIT nếu email đăng nhập không đúng format -->
+        <div id="otpEmailStep" style="display:none">
+          <div style="margin-bottom:10px;font-size:0.88rem;color:var(--text-muted);line-height:1.6">Email đăng nhập của
+            bạn không phải email trường UIT. Vui lòng nhập email sinh viên để nhận OTP:</div>
+          <input type="email" class="form-input" id="verifyUitEmail" placeholder="MSSV@gm.uit.edu.vn"
+            style="margin-bottom:12px">
+          <button class="btn-full" id="verifyEmailSubmitBtn" onclick="verificationManager.submitUitEmail()">Gửi
+            OTP</button>
+        </div>
+
         <!-- Bước 2: Nhập OTP -->
         <div id="otpStep2" style="display:none">
-          <div style="margin-bottom:8px;font-size:0.88rem;color:var(--text-muted)">Mã OTP đang được gửi đến email sinh viên của bạn:</div>
+          <div style="margin-bottom:8px;font-size:0.88rem;color:var(--text-muted)">Mã OTP đang được gửi đến email sinh
+            viên của bạn:</div>
           <div
             style="font-weight:600;font-size:1rem;padding:10px 14px;background:var(--bg-card);border-radius:8px;border:1.5px solid var(--border);margin-bottom:16px;text-align:center"
             id="verifyEmailDisplay">—</div>
@@ -387,7 +545,7 @@
   <div class="modal-overlay" id="editModal">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">✏️ Chỉnh sửa thông tin</div>
+        <div class="modal-title">Chỉnh sửa thông tin</div>
         <button class="modal-close" onclick="closeModal('editModal')">✕</button>
       </div>
       <div class="modal-body">
@@ -403,12 +561,18 @@
         <div class="form-group">
           <label class="form-label">Avatar</label>
           <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
-            <div id="editAvatarPreview" style="width:64px;height:64px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;flex-shrink:0;overflow:hidden;border:2px solid var(--border)">U</div>
+            <div id="editAvatarPreview"
+              style="width:64px;height:64px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;flex-shrink:0;overflow:hidden;border:2px solid var(--border)">
+              U</div>
             <div style="flex:1">
-              <label for="editAvatar" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;font-weight:600;color:var(--text);transition:all 0.2s" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+              <label for="editAvatar"
+                style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;font-weight:600;color:var(--text);transition:all 0.2s"
+                onmouseover="this.style.borderColor='var(--primary)'"
+                onmouseout="this.style.borderColor='var(--border)'">
                 <i class="fa-solid fa-camera"></i> Chọn ảnh
               </label>
-              <div id="editAvatarFileName" style="margin-top:6px;font-size:0.78rem;color:var(--text-muted)">Chưa chọn ảnh · JPG, PNG, GIF · Max 2MB</div>
+              <div id="editAvatarFileName" style="margin-top:6px;font-size:0.78rem;color:var(--text-muted)">Chưa chọn
+                ảnh · JPG, PNG, GIF · Max 2MB</div>
             </div>
           </div>
           <input type="file" id="editAvatar" accept="image/*" style="display:none" onchange="previewAvatarFile(this)">
@@ -432,7 +596,7 @@
   <div class="modal-overlay" id="resetPasswordModal">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">🔒 Đặt lại mật khẩu</div>
+        <div class="modal-title">Đặt lại mật khẩu</div>
         <button class="modal-close" onclick="closeModal('resetPasswordModal')">✕</button>
       </div>
       <div class="modal-body">
@@ -498,7 +662,7 @@
   <div class="modal-overlay" id="historyModal">
     <div class="modal modal-lg">
       <div class="modal-header">
-        <div class="modal-title">🕰️ Lịch sử tham gia lớp học</div>
+        <div class="modal-title">Lịch sử tham gia lớp học</div>
         <button class="modal-close" onclick="closeModal('historyModal')">✕</button>
       </div>
       <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
@@ -512,6 +676,8 @@
       </div>
     </div>
   </div>
+
+
 
   <!-- TOAST CONTAINER -->
   <div class="toast-container" id="toastContainer"></div>

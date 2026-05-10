@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Modern Dashboard Prototype</title>
+  
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            bgSoft: '#fbf8f1',
+            cardYellow: '#fceaa5',
+            cardPink: '#f9c5d8',
+            cardGreen: '#b7d5a5',
+            cardBlue: '#9cb4d8',
+            darkSidebar: '#1a1a1a'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Phosphor Icons (for modern icons) -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-bgSoft text-gray-800 m-0 p-0 h-screen overflow-hidden">
+  <div id="root" class="h-full"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // --- MOCK DATA ---
+    const mockPosts = [
+      { id: 1, title: "Lập trình C++ Cơ bản", author: "Taigo Wilkinson", time: "09:15 AM", type: "Tutor", joined: false },
+      { id: 2, title: "Ôn tập Giải tích 1", author: "Samantha Williams", time: "09:15 AM", type: "Study", joined: true },
+      { id: 3, title: "Nhập môn AI", author: "Amy White", time: "09:15 AM", type: "Tutor", joined: false },
+      { id: 4, title: "Luyện thi TOEIC", author: "Tyler Young", time: "09:45 AM", type: "Study", joined: false },
+    ];
+
+    const mockStats = [
+      { id: 1, title: "Tổng thời gian học", value: "24h", label: "Trung bình: 2h/ngày", color: "bg-cardYellow" },
+      { id: 2, title: "Tiến độ học tập", value: "85%", label: "Tăng 5% tuần này", color: "bg-cardGreen" },
+      { id: 3, title: "Phiên học đã tham gia", value: "12", label: "Tháng này: 3", color: "bg-cardBlue" },
+    ];
+
+    const chartData = [
+      { time: '10:30', activity: 20 },
+      { time: '11:00', activity: 40 },
+      { time: '11:30', activity: 30 },
+      { time: '12:00', activity: 80 },
+      { time: '12:30', activity: 50 },
+      { time: '13:00', activity: 60 },
+      { time: '13:30', activity: 40 },
+    ];
+
+    const mockUpcoming = [
+      { id: 1, title: "Kế hoạch team dự án", room: "Phòng B202", time: "08:12 - 09:00", participants: 5 },
+      { id: 2, title: "Chữa bài tập Lý thuyết Đồ thị", room: "Online (Teams)", time: "09:00 - 10:30", participants: 12 },
+    ];
+
+    // --- COMPONENTS ---
+
+    const Sidebar = () => {
+      const navItems = [
+        { icon: "ph-house", label: "Trang chủ", active: true },
+        { icon: "ph-calendar", label: "Lịch học" },
+        { icon: "ph-users", label: "Bạn học" },
+        { icon: "ph-chart-pie-slice", label: "Thống kê" },
+        { icon: "ph-book-bookmark", label: "Khóa học" },
+        { icon: "ph-bookmark-simple", label: "Lưu trữ" },
+      ];
+
+      return (
+        <aside className="w-[280px] bg-darkSidebar text-white rounded-[32px] p-8 flex flex-col justify-between shadow-2xl h-full">
+          <div>
+            <div className="flex items-center gap-3 mb-12">
+              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center">
+                <i className="ph-fill ph-student text-darkSidebar text-xl"></i>
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight">StudyBuddy</h1>
+            </div>
+            
+            <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-4">Menu Chính</div>
+            <nav className="flex flex-col gap-2">
+              {navItems.map((item, idx) => (
+                <button key={idx} className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${item.active ? 'bg-white/10 text-white font-semibold' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
+                  <i className={`${item.icon} text-xl`}></i>
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <div>
+            <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-4">Cá nhân</div>
+            <nav className="flex flex-col gap-2">
+              <button className="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+                <i className="ph ph-chat-circle-dots text-xl"></i> Tin nhắn
+              </button>
+              <button className="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+                <i className="ph ph-gear text-xl"></i> Cài đặt
+              </button>
+              <button className="flex items-center gap-4 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all mt-4">
+                <i className="ph ph-sign-out text-xl"></i> Đăng xuất
+              </button>
+            </nav>
+          </div>
+        </aside>
+      );
+    };
+
+    const Header = () => (
+      <header className="flex justify-between items-start mb-8">
+        <div>
+          <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-2">Good morning, Dr. Olivia</h2>
+          <p className="text-gray-500 font-medium max-w-2xl">
+            Intelly wishes you a good and productive day. 45 patients waiting for your treatment today. You also have one live event in your calendar today.
+          </p>
+        </div>
+        <div className="flex gap-4">
+          <div className="flex bg-white rounded-full p-2 shadow-sm border border-gray-100">
+            <input type="text" placeholder="Tìm kiếm..." className="bg-transparent outline-none px-4 text-sm w-48" />
+            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer">
+              <i className="ph ph-magnifying-glass"></i>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button className="w-12 h-12 rounded-full bg-darkSidebar text-white flex items-center justify-center hover:opacity-90 transition"><i className="ph ph-user text-xl"></i></button>
+            <button className="w-12 h-12 rounded-full bg-darkSidebar text-white flex items-center justify-center hover:opacity-90 transition"><i className="ph ph-bell text-xl"></i></button>
+            <button className="w-12 h-12 rounded-full bg-darkSidebar text-white flex items-center justify-center hover:opacity-90 transition"><i className="ph ph-gear text-xl"></i></button>
+          </div>
+        </div>
+      </header>
+    );
+
+    const StatCard = ({ stat }) => (
+      <div className={`${stat.color} p-6 rounded-[24px] shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer relative overflow-hidden group`}>
+        <div className="absolute -right-6 -top-6 text-black/5 text-9xl group-hover:scale-110 transition-transform">
+          <i className="ph-fill ph-chart-bar"></i>
+        </div>
+        <div>
+          <h3 className="font-bold text-gray-800 mb-4">{stat.title}</h3>
+          <div className="text-4xl font-extrabold text-gray-900 mb-1">{stat.value}</div>
+          <div className="text-sm font-semibold text-gray-700/70">{stat.label}</div>
+        </div>
+      </div>
+    );
+
+    const ChartCard = () => (
+      <div className="bg-cardPink p-6 rounded-[24px] col-span-2 shadow-sm relative overflow-hidden group cursor-pointer hover:shadow-md transition-shadow">
+        <div className="absolute -right-10 -bottom-10 text-black/5 text-[150px] group-hover:rotate-12 transition-transform">
+          <i className="ph-fill ph-heart"></i>
+        </div>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="font-bold text-gray-800">Tóm tắt truy cập:</h3>
+          <div className="flex gap-6">
+            <div><span className="font-extrabold text-gray-900">24 min</span> <span className="text-xs font-semibold text-gray-700/70">TRUNG BÌNH</span></div>
+            <div><span className="font-extrabold text-gray-900">01:30 h</span> <span className="text-xs font-semibold text-gray-700/70">TỐI ĐA</span></div>
+          </div>
+        </div>
+        <div className="h-32 w-full flex items-center justify-center bg-white/30 rounded-xl border border-dashed border-white/50">
+          <span className="font-bold text-gray-700">Biểu đồ</span>
+        </div>
+      </div>
+    );
+
+    const PostList = () => {
+      const [posts, setPosts] = useState(mockPosts);
+
+      const toggleJoin = (id) => {
+        setPosts(posts.map(p => p.id === id ? { ...p, joined: !p.joined } : p));
+      };
+
+      return (
+        <div className="bg-white/60 backdrop-blur rounded-[24px] p-6 shadow-sm flex-1">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-bold text-xl">Danh sách lớp học</h3>
+            <button className="px-4 py-2 bg-darkSidebar text-white text-sm font-semibold rounded-full">Hôm nay <i className="ph ph-caret-down ml-1"></i></button>
+          </div>
+          <div className="flex flex-col gap-3">
+            {posts.map(post => (
+              <div key={post.id} className="flex items-center justify-between p-4 rounded-[20px] bg-white border border-gray-100 hover:border-gray-200 transition-colors shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-inner ${post.type === 'Tutor' ? 'bg-cardPink/40 text-pink-600' : 'bg-cardBlue/40 text-blue-600'}`}>
+                    <i className={post.type === 'Tutor' ? 'ph-fill ph-chalkboard-teacher' : 'ph-fill ph-student'}></i>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">{post.title}</h4>
+                    <p className="text-sm font-medium text-gray-500">{post.author} • {post.type}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">{post.time}</span>
+                  <button 
+                    onClick={() => toggleJoin(post.id)}
+                    className={`w-24 py-2 rounded-full text-sm font-bold transition-all ${post.joined ? 'bg-cardGreen text-green-900' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  >
+                    {post.joined ? 'Đã tham gia' : 'Tham gia'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    const CalendarSidebar = () => {
+      return (
+        <div className="w-[340px] bg-white rounded-[32px] p-6 shadow-xl flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <button className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition"><i className="ph ph-arrow-left"></i></button>
+            <h3 className="font-bold text-lg bg-cardPink px-4 py-1 rounded-full">May 2024</h3>
+            <button className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition"><i className="ph ph-arrow-right"></i></button>
+          </div>
+          
+          <div className="grid grid-cols-7 gap-1 text-center mb-2">
+            {['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'].map(d => <div key={d} className="text-xs font-bold text-gray-400">{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-sm font-semibold mb-6">
+            {[...Array(31)].map((_, i) => (
+              <div key={i} className={`h-8 w-8 mx-auto flex items-center justify-center rounded-full cursor-pointer transition ${i + 1 === 15 ? 'bg-cardPink text-black font-extrabold shadow-sm' : 'hover:bg-gray-100 text-gray-700'}`}>
+                {i + 1}
+              </div>
+            ))}
+          </div>
+
+          <button className="w-full py-3 bg-darkSidebar text-white font-bold rounded-full mb-8 hover:opacity-90 transition">
+            Thêm sự kiện
+          </button>
+
+          <div className="flex-1 overflow-y-auto">
+            <div className="flex justify-between items-end mb-6">
+              <div>
+                <h3 className="font-extrabold text-2xl">May 15</h3>
+                <p className="text-sm font-semibold text-gray-500">Hôm nay</p>
+              </div>
+              <button className="px-3 py-1 bg-darkSidebar text-white text-xs font-semibold rounded-full">Tất cả <i className="ph ph-caret-down"></i></button>
+            </div>
+
+            <div className="relative border-l-2 border-dashed border-gray-200 ml-4 pl-6 flex flex-col gap-6">
+              {mockUpcoming.map((item, idx) => (
+                <div key={item.id} className="relative bg-cardYellow/30 p-4 rounded-[20px] shadow-sm">
+                  <div className="absolute -left-[35px] top-4 w-6 h-6 rounded-full bg-cardYellow border-4 border-white flex items-center justify-center text-xs shadow-sm">
+                    <i className="ph-fill ph-users"></i>
+                  </div>
+                  <h4 className="font-bold text-gray-900">{item.title}</h4>
+                  <p className="text-sm font-medium text-gray-600 mb-2">{item.room}</p>
+                  <div className="inline-block px-3 py-1 bg-white rounded-full text-xs font-bold text-gray-700 shadow-sm">{item.time}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const Dashboard = () => {
+      return (
+        <div className="flex h-screen bg-bgSoft p-4 gap-6 font-sans">
+          <Sidebar />
+          
+          <main className="flex-1 flex flex-col overflow-hidden py-4">
+            <Header />
+            
+            <div className="flex-1 overflow-y-auto pr-2 pb-10">
+              <div className="grid grid-cols-4 gap-6 mb-6">
+                <StatCard stat={mockStats[0]} />
+                <StatCard stat={mockStats[1]} />
+                <ChartCard />
+              </div>
+              
+              <div className="grid grid-cols-4 gap-6 mb-6">
+                <StatCard stat={mockStats[2]} />
+                <div className="bg-cardBlue p-6 rounded-[24px] col-span-2 shadow-sm flex flex-col justify-center">
+                  <h3 className="font-bold text-gray-800 mb-4">Mục tiêu tuần này:</h3>
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <div className="text-3xl font-extrabold text-gray-900">03:45 h</div>
+                      <div className="text-xs font-bold text-gray-700/70 uppercase">Đã học</div>
+                    </div>
+                    <div>
+                      <div className="text-3xl font-extrabold text-gray-900">02:00 h</div>
+                      <div className="text-xs font-bold text-gray-700/70 uppercase">Còn lại</div>
+                    </div>
+                    <div>
+                      <div className="text-3xl font-extrabold text-gray-900">00:24 h</div>
+                      <div className="text-xs font-bold text-gray-700/70 uppercase">Thảo luận</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <PostList />
+            </div>
+          </main>
+          
+          <CalendarSidebar />
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Dashboard />);
+  </script>
+</body>
+</html>
